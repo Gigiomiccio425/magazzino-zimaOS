@@ -53,7 +53,7 @@ Install "solo inserendo il file": nessun sorgente da copiare, nessuna build sul 
    ```yaml
    services:
      magazzino:
-       image: ghcr.io/gigiomiccio425/magazzino-zimaos:latest
+       image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.0.0
        container_name: magazzino
        pull_policy: always
        ports:
@@ -116,6 +116,35 @@ docker compose -f docker-compose.dev.yml up -d --build
 | `SECRET_KEY`  | *(auto)*       | Firma cookie. Vuoto = generata e salvata in `data`.|
 | `TZ`          | `Europe/Rome`  | Fuso orario.                                       |
 | `DATA_DIR`    | `/data`        | Cartella dati nel container.                       |
+
+---
+
+## Versioni e aggiornamenti (controllati)
+
+Nessun auto-update. Il compose e' **fissato a una versione** (`:1.0.0`): il container
+resta li' finche' non decidi tu.
+
+**Immagini pubblicate**
+- `:X.Y.Z` (es. `:1.0.0`) e `:X.Y` — versioni **stabili**, create dai tag `vX.Y.Z`. Usa queste nel compose.
+- `:latest` — ultimo commit su `main` (sviluppo, puo' essere instabile).
+- `:sha-xxxxxxx` — build di un commit preciso (rollback fine).
+
+**Rilasciare una nuova versione** (da fare quando vuoi una "versione principale"):
+```bash
+git tag -a v1.1.0 -m "Release v1.1.0"
+git push origin v1.1.0
+```
+GitHub Actions builda e pubblica `:1.1.0` e `:1.1`. La vedi in **Releases** / **Packages**.
+
+**Aggiornare l'installazione** su ZimaOS (solo quando scegli tu):
+1. Cambia il tag nel compose: `...:1.0.0` -> `...:1.1.0`.
+2. Ricrea il container: App Store -> **Recreate**, oppure CLI `docker compose up -d`.
+   I dati restano (bind mount).
+
+**Rollback**: rimetti il tag della versione precedente (o un `:sha-...`) e ricrea.
+
+Per sapere quando c'e' una versione nuova: sul repo GitHub premi **Watch -> Custom ->
+Releases** (ricevi notifica ad ogni release), oppure guarda la pagina Releases.
 
 ---
 

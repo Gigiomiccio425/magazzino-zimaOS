@@ -1,18 +1,20 @@
 # ============================================================
 # INSTALLAZIONE — App Store grafico ZimaOS (pull immagine da GHCR).
-# La UI di ZimaOS scarica solo immagini gia pronte: NON builda.
-# L'immagine viene pubblicata da GitHub Actions su GHCR (GitHub stesso).
+# Aggiornamenti CONTROLLATI per versione: nessun auto-update.
 #
-# Prerequisito una tantum (vedi README):
-#   1. Repo contiene .github/workflows/docker-publish.yml
-#   2. Actions ha buildato -> immagine su ghcr.io
-#   3. Package GHCR impostato "Public"
+# La versione e' FISSATA qui sotto (:1.0.0). Il container resta su questa
+# versione finche' non la cambi TU.
 #
-# Poi: incolla questo YAML in App Store -> Import, cambia APP_PASSWORD, avvia.
+# Per aggiornare a una nuova versione:
+#   1. Guarda le Release del repo: github.com/Gigiomiccio425/magazzino-zimaOS/releases
+#   2. Cambia il numero dopo i due punti (es. :1.0.0 -> :1.1.0)
+#   3. Ricrea il container (App Store: Recreate / CLI: docker compose up -d)
+#
+# Prerequisito: immagine pubblicata su GHCR e package "Public" (una volta sola).
 # ============================================================
 services:
   magazzino:
-    image: ghcr.io/gigiomiccio425/magazzino-zimaos:latest
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.0.0
     container_name: magazzino
     pull_policy: always
     ports:
