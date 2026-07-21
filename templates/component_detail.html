@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ component.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Componente{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h1 class="detail-title">{{ component.name }}</h1>
+    <div class="detail-meta">
+      {% if component.category %}<span class="chip">{{ component.category }}</span>{% endif %}
+      <span class="status status--{{ component.status }}">{{ STATUSES.get(component.status, component.status) }}</span>
+      {% if component.object_code %}<span class="mono detail-code">#{{ component.object_code }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a href="/components/{{ component.id }}/edit" class="btn btn--red">Modifica</a>
+    <a href="/components" class="btn btn--ghost">&larr; Lista</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Dettagli</h2></div>
+    <dl class="specs">
+      <div class="spec"><dt>Modello</dt><dd>{{ component.model or '—' }}</dd></div>
+      <div class="spec"><dt>Produttore</dt><dd>{{ component.manufacturer or '—' }}</dd></div>
+      <div class="spec"><dt>Seriale</dt><dd class="mono">{{ component.serial_number or '—' }}</dd></div>
+      <div class="spec"><dt>Quantita</dt><dd>{{ component.quantity }}</dd></div>
+      <div class="spec"><dt>Posizione</dt><dd>
+        {% if component.machine %}<a href="/machines/{{ component.machine.id }}" class="link">{{ component.machine.name }}</a>
+        {% elif component.location %}{{ component.location }}
+        {% else %}Magazzino{% endif %}
+      </dd></div>
+      <div class="spec"><dt>Creato</dt><dd>{{ component.created_at|dt }}</dd></div>
+      <div class="spec"><dt>Aggiornato</dt><dd>{{ component.updated_at|dt }}</dd></div>
+    </dl>
+
+    {% if component.attributes %}
+    <h3 class="subhead">Attributi</h3>
+    <dl class="specs specs--attr">
+      {% for k, v in component.attributes.items() %}
+      <div class="spec"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+
+    {% if component.notes %}
+    <h3 class="subhead">Note</h3>
+    <p class="notes">{{ component.notes }}</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Storico</h2></div>
+    {% if component.movements %}
+    <ul class="timeline">
+      {% for mv in component.movements %}
+      <li class="timeline__item">
+        <span class="tag tag--{{ mv.action }}">{{ mv.action }}</span>
+        <span class="timeline__note">
+          {% if mv.from_machine or mv.to_machine %}
+            {{ mv.from_machine or 'Magazzino' }} &rarr; {{ mv.to_machine or 'Magazzino' }}
+          {% else %}{{ mv.note }}{% endif %}
+        </span>
+        <time class="timeline__time">{{ mv.timestamp|dt }}</time>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">Nessun movimento registrato.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

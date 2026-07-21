@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ machine.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Macchina{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h1 class="detail-title">{{ machine.name }}</h1>
+    <div class="detail-meta">
+      {% if machine.kind %}<span class="chip">{{ machine.kind }}</span>{% endif %}
+      {% if machine.location %}<span class="detail-code">{{ machine.location }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a href="/machines/{{ machine.id }}/edit" class="btn btn--red">Modifica</a>
+    <a href="/machines" class="btn btn--ghost">&larr; Lista</a>
+  </div>
+</div>
+
+{% if machine.description %}
+<p class="notes notes--wide">{{ machine.description }}</p>
+{% endif %}
+
+<section class="panel">
+  <div class="panel__head">
+    <h2 class="panel__title">Componenti installati ({{ components|length }})</h2>
+    <a href="/components/new" class="link-more">+ Aggiungi &rarr;</a>
+  </div>
+
+  {% if components %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr><th>Codice</th><th>Nome</th><th>Categoria</th><th>Modello</th><th>Qta</th><th>Stato</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for c in components %}
+      <tr onclick="location.href='/components/{{ c.id }}'">
+        <td class="mono">{{ c.object_code or '—' }}</td>
+        <td class="strong">{{ c.name }}</td>
+        <td>{% if c.category %}<span class="chip">{{ c.category }}</span>{% else %}—{% endif %}</td>
+        <td>{{ c.model or '—' }}</td>
+        <td class="num">{{ c.quantity }}</td>
+        <td><span class="status status--{{ c.status }}">{{ STATUSES.get(c.status, c.status) }}</span></td>
+        <td class="row-actions"><a href="/components/{{ c.id }}/edit" class="mini" onclick="event.stopPropagation()">Modifica</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">Nessun componente su questa macchina.</p>
+  {% endif %}
+</section>
+{% endblock %}

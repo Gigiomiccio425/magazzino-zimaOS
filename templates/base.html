@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand__mark"></div>
+        <a href="/" class="brand__name">{{ APP_NAME }}</a>
+        <div class="brand__sub">HARDWARE / INVENTARIO</div>
+      </div>
+      <nav class="nav">
+        <a href="/" class="nav__link" data-match="/">Dashboard</a>
+        <a href="/components" class="nav__link" data-match="/components">Componenti</a>
+        <a href="/machines" class="nav__link" data-match="/machines">Macchine</a>
+        <a href="/movements" class="nav__link" data-match="/movements">Movimenti</a>
+      </nav>
+      <div class="nav__foot">
+        <a href="/components/new" class="btn btn--red btn--block">+ Componente</a>
+        <a href="/machines/new" class="btn btn--ghost btn--block">+ Macchina</a>
+        <a href="/logout" class="nav__logout">Esci &rarr;</a>
+      </div>
+      <div class="sidebar__deco"></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="burger" id="burger" aria-label="Menu">&#9776;</button>
+        <div class="topbar__title">{% block heading %}{% endblock %}</div>
+        <div class="topbar__bar"></div>
+      </header>
+
+      {% if flashes %}
+      <div class="flashes">
+        {% for f in flashes %}
+        <div class="flash flash--{{ f.category }}">{{ f.message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="content">
+        {% block content %}{% endblock %}
+      </div>
+
+      <footer class="foot">MAGAZZINO &middot; {{ current_year }} &middot; SELF-HOSTED</footer>
+    </main>
+  </div>
+  <script src="{{ url_for('static', path='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

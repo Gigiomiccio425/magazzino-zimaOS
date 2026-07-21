@@ -1,0 +1,32 @@
+# ============================================================
+# INSTALLAZIONE FACILE — basta questo file.
+#
+# 1. Cambia APP_PASSWORD.
+# 2. Avvia:
+#      docker compose up -d
+#
+# Nessun sorgente da copiare: l'immagine viene scaricata da GHCR.
+# (Richiede che il workflow GitHub Actions abbia gia pubblicato l'immagine
+#  e che il package GHCR sia impostato "Public" una volta sola.)
+# ============================================================
+services:
+  magazzino:
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:latest
+    container_name: magazzino
+    pull_policy: always
+    ports:
+      # host:container -> apri http://IP-ZIMA:8086
+      - "8086:8000"
+    environment:
+      - APP_PASSWORD=${APP_PASSWORD:-cambiami}   # CAMBIALA
+      - APP_NAME=${APP_NAME:-MAGAZZINO}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - TZ=${TZ:-Europe/Rome}
+      - DATA_DIR=/data
+    volumes:
+      # volume nominato: dati persistenti gestiti da Docker (nessun path host)
+      - magazzino_data:/data
+    restart: unless-stopped
+
+volumes:
+  magazzino_data:

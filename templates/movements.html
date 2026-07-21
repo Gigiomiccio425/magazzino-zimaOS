@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Movimenti &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Movimenti{% endblock %}
+
+{% block content %}
+{% if items %}
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr><th>Data</th><th>Componente</th><th>Azione</th><th>Da</th><th>A</th><th>Note</th></tr>
+  </thead>
+  <tbody>
+    {% for mv in items %}
+    <tr>
+      <td class="mono nowrap">{{ mv.timestamp|dt }}</td>
+      <td class="strong">
+        {% if mv.component %}<a href="/components/{{ mv.component_id }}" class="link">{{ mv.component.name }}</a>
+        {% else %}—{% endif %}
+      </td>
+      <td><span class="tag tag--{{ mv.action }}">{{ mv.action }}</span></td>
+      <td>{{ mv.from_machine or '—' }}</td>
+      <td>{{ mv.to_machine or '—' }}</td>
+      <td>{{ mv.note }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-box"><p>Nessun movimento registrato.</p></div>
+{% endif %}
+{% endblock %}

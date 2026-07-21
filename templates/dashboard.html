@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+
+{% block content %}
+<section class="stats">
+  <a href="/components" class="stat stat--red">
+    <div class="stat__num">{{ stats.total }}</div>
+    <div class="stat__label">Componenti</div>
+  </a>
+  <div class="stat">
+    <div class="stat__num">{{ stats.units }}</div>
+    <div class="stat__label">Pezzi totali</div>
+  </div>
+  <a href="/components?status=stock" class="stat">
+    <div class="stat__num">{{ stats.stock }}</div>
+    <div class="stat__label">A magazzino</div>
+  </a>
+  <a href="/components?status=in_use" class="stat stat--black">
+    <div class="stat__num">{{ stats.in_use }}</div>
+    <div class="stat__label">In uso</div>
+  </a>
+  <a href="/components?status=faulty" class="stat">
+    <div class="stat__num">{{ stats.faulty }}</div>
+    <div class="stat__label">Guasti</div>
+  </a>
+  <a href="/machines" class="stat">
+    <div class="stat__num">{{ stats.machines }}</div>
+    <div class="stat__label">Macchine</div>
+  </a>
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Movimenti recenti</h2>
+      <a href="/movements" class="link-more">Tutti &rarr;</a>
+    </div>
+    {% if recent %}
+    <ul class="timeline">
+      {% for mv in recent %}
+      <li class="timeline__item">
+        <a href="/components/{{ mv.component_id }}" class="timeline__name">
+          {{ mv.component.name if mv.component else 'Componente' }}
+        </a>
+        <span class="tag tag--{{ mv.action }}">{{ mv.action }}</span>
+        <span class="timeline__note">
+          {% if mv.from_machine or mv.to_machine %}
+            {{ mv.from_machine or 'Magazzino' }} &rarr; {{ mv.to_machine or 'Magazzino' }}
+          {% else %}{{ mv.note }}{% endif %}
+        </span>
+        <time class="timeline__time">{{ mv.timestamp|dt }}</time>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">Nessun movimento ancora.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Per categoria</h2>
+    </div>
+    {% if by_category %}
+    <ul class="bars">
+      {% for name, count in by_category %}
+      <li class="bar">
+        <span class="bar__label">{{ name or 'Senza categoria' }}</span>
+        <span class="bar__track">
+          <span class="bar__fill" style="width: {{ (count / cat_max * 100)|round(0, 'floor') }}%"></span>
+        </span>
+        <span class="bar__count">{{ count }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">Aggiungi il primo componente per vedere le statistiche.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

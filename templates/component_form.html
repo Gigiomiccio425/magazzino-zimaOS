@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% set editing = component is not none %}
+{% block title %}{{ 'Modifica' if editing else 'Nuovo' }} componente &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifica componente' if editing else 'Nuovo componente' }}{% endblock %}
+
+{% block content %}
+<form method="post"
+      action="{{ '/components/' ~ component.id ~ '/edit' if editing else '/components/new' }}"
+      class="form">
+
+  <div class="form__grid">
+    <label class="field">
+      <span class="field__label">Nome *</span>
+      <input type="text" name="name" required class="input" value="{{ component.name if editing else '' }}">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Codice oggetto</span>
+      <input type="text" name="object_code" class="input mono" value="{{ component.object_code if editing else '' }}">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Categoria</span>
+      <input type="text" name="category" list="cat-list" id="category-input" class="input"
+             value="{{ component.category if editing else '' }}">
+      <datalist id="cat-list">
+        {% for c in categories %}<option value="{{ c }}">{% endfor %}
+      </datalist>
+    </label>
+
+    <label class="field">
+      <span class="field__label">Modello</span>
+      <input type="text" name="model" class="input" value="{{ component.model if editing else '' }}">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Produttore</span>
+      <input type="text" name="manufacturer" class="input" value="{{ component.manufacturer if editing else '' }}">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Numero seriale</span>
+      <input type="text" name="serial_number" class="input mono" value="{{ component.serial_number if editing else '' }}">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Quantita</span>
+      <input type="number" name="quantity" min="1" class="input" value="{{ component.quantity if editing else 1 }}">
+    </label>
+
+    <label class="field">
+      <span class="field__label">Stato</span>
+      <select name="status" class="input">
+        {% for key, label in STATUSES.items() %}
+        <option value="{{ key }}" {% if editing and component.status == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="field__label">Macchina (dove e installato)</span>
+      <select name="machine_id" class="input">
+        <option value="">— A magazzino —</option>
+        {% for m in machines %}
+        <option value="{{ m.id }}" {% if editing and component.machine_id == m.id %}selected{% endif %}>{{ m.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="field__label">Posizione a magazzino (scaffale/box)</span>
+      <input type="text" name="location" class="input" value="{{ component.location if editing else '' }}">
+    </label>
+  </div>
+
+  <fieldset class="attrs">
+    <legend class="attrs__legend">Attributi specifici
+      <span class="attrs__hint">(es. capacita, tipo memoria, velocita, interfaccia)</span>
+    </legend>
+    <div id="attr-rows">
+      {% if editing and component.attributes %}
+        {% for k, v in component.attributes.items() %}
+        <div class="attr-row">
+          <input type="text" name="attr_key" placeholder="Attributo" class="input" value="{{ k }}">
+          <input type="text" name="attr_value" placeholder="Valore" class="input" value="{{ v }}">
+          <button type="button" class="btn btn--x" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <div class="attrs__actions">
+      <button type="button" class="btn btn--ghost" id="add-attr">+ Riga</button>
+      <button type="button" class="btn btn--ghost" id="suggest-attr">Attributi suggeriti</button>
+    </div>
+  </fieldset>
+
+  <label class="field">
+    <span class="field__label">Note</span>
+    <textarea name="notes" rows="3" class="input">{{ component.notes if editing else '' }}</textarea>
+  </label>
+
+  <div class="form__actions">
+    <button type="submit" class="btn btn--red btn--lg">{{ 'Salva modifiche' if editing else 'Crea componente' }}</button>
+    <a href="{{ '/components/' ~ component.id if editing else '/components' }}" class="btn btn--ghost btn--lg">Annulla</a>
+    {% if editing %}
+    <form method="post" action="/components/{{ component.id }}/delete" class="inline-form"
+          onsubmit="return confirm('Eliminare questo componente? Azione irreversibile.')">
+      <button type="submit" class="btn btn--danger btn--lg">Elimina</button>
+    </form>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

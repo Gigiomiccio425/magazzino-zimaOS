@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Componenti &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Componenti{% endblock %}
+
+{% block content %}
+<form method="get" action="/components" class="filters">
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="Cerca nome, codice, modello, seriale..." class="input filters__search">
+  <select name="category" class="input">
+    <option value="">Tutte le categorie</option>
+    {% for c in categories %}
+    <option value="{{ c }}" {% if c == filters.category %}selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="input">
+    <option value="">Ogni stato</option>
+    {% for key, label in STATUSES.items() %}
+    <option value="{{ key }}" {% if key == filters.status %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="machine" class="input">
+    <option value="">Ogni macchina</option>
+    {% for m in machines %}
+    <option value="{{ m.id }}" {% if m.id|string == filters.machine %}selected{% endif %}>{{ m.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn--black">Filtra</button>
+  <a href="/components" class="btn btn--ghost">Reset</a>
+  <a href="/components/new" class="btn btn--red">+ Nuovo</a>
+</form>
+
+{% if items %}
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr>
+      <th>Codice</th>
+      <th>Nome</th>
+      <th>Categoria</th>
+      <th>Modello</th>
+      <th>Qta</th>
+      <th>Stato</th>
+      <th>Posizione</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in items %}
+    <tr onclick="location.href='/components/{{ c.id }}'">
+      <td class="mono">{{ c.object_code or '—' }}</td>
+      <td class="strong">{{ c.name }}</td>
+      <td>{% if c.category %}<span class="chip">{{ c.category }}</span>{% else %}—{% endif %}</td>
+      <td>{{ c.model or '—' }}</td>
+      <td class="num">{{ c.quantity }}</td>
+      <td><span class="status status--{{ c.status }}">{{ STATUSES.get(c.status, c.status) }}</span></td>
+      <td>
+        {% if c.machine %}<a href="/machines/{{ c.machine.id }}" class="link" onclick="event.stopPropagation()">{{ c.machine.name }}</a>
+        {% elif c.location %}{{ c.location }}
+        {% else %}Magazzino{% endif %}
+      </td>
+      <td class="row-actions">
+        <a href="/components/{{ c.id }}/edit" class="mini" onclick="event.stopPropagation()">Modifica</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="count-line">{{ items|length }} risultati</p>
+{% else %}
+<div class="empty-box">
+  <p>Nessun componente trovato.</p>
+  <a href="/components/new" class="btn btn--red">+ Aggiungi il primo</a>
+</div>
+{% endif %}
+{% endblock %}

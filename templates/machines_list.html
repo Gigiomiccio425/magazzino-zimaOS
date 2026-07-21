@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Macchine &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Macchine{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/machines/new" class="btn btn--red">+ Nuova macchina</a>
+</div>
+
+{% if machines %}
+<div class="cards">
+  {% for m in machines %}
+  <a href="/machines/{{ m.id }}" class="card">
+    <div class="card__top">
+      <span class="card__kind">{{ m.kind or 'Macchina' }}</span>
+      <span class="card__badge">{{ counts.get(m.id, 0) }}</span>
+    </div>
+    <h2 class="card__title">{{ m.name }}</h2>
+    {% if m.location %}<div class="card__loc">{{ m.location }}</div>{% endif %}
+    {% if m.description %}<p class="card__desc">{{ m.description }}</p>{% endif %}
+    <div class="card__foot">{{ counts.get(m.id, 0) }} componenti &rarr;</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-box">
+  <p>Nessuna macchina registrata.</p>
+  <a href="/machines/new" class="btn btn--red">+ Crea la prima</a>
+</div>
+{% endif %}
+{% endblock %}

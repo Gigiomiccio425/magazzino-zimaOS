@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accesso &middot; {{ APP_NAME }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}">
+</head>
+<body class="login-body">
+  <div class="login-deco login-deco--1"></div>
+  <div class="login-deco login-deco--2"></div>
+  <div class="login-deco login-deco--3"></div>
+
+  <div class="login-card">
+    <div class="login-card__mark"></div>
+    <h1 class="login-card__title">{{ APP_NAME }}</h1>
+    <p class="login-card__sub">MAGAZZINO HARDWARE</p>
+
+    {% if flashes %}
+      {% for f in flashes %}
+      <div class="flash flash--{{ f.category }}">{{ f.message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" action="/login" class="login-form">
+      <label class="field">
+        <span class="field__label">Password</span>
+        <input type="password" name="password" autofocus required class="input">
+      </label>
+      <button type="submit" class="btn btn--red btn--block btn--lg">Entra &rarr;</button>
+    </form>
+  </div>
+</body>
+</html>

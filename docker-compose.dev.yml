@@ -1,0 +1,18 @@
+# Variante SVILUPPO: builda l'immagine dai sorgenti locali (repo clonato).
+#   docker compose -f docker-compose.dev.yml up -d --build
+services:
+  magazzino:
+    build: .
+    image: magazzino-hardware:local
+    container_name: magazzino-dev
+    ports:
+      - "8086:8000"
+    environment:
+      - APP_PASSWORD=${APP_PASSWORD:-cambiami}
+      - APP_NAME=${APP_NAME:-MAGAZZINO}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - TZ=${TZ:-Europe/Rome}
+      - DATA_DIR=/data
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
