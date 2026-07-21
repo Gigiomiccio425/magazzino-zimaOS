@@ -24,6 +24,7 @@
     {% endfor %}
   </select>
   <button type="submit" class="btn btn--black">Filtra</button>
+  <button type="button" class="btn btn--black" data-scan-search title="Scansiona seriale/codice">&#128247; Scan</button>
   <a href="/components" class="btn btn--ghost">Reset</a>
   <a href="/components/new" class="btn btn--red">+ Nuovo</a>
 </form>
@@ -33,7 +34,7 @@
 <table class="table">
   <thead>
     <tr>
-      <th>Codice</th>
+      <th>Seriale</th>
       <th>Nome</th>
       <th>Categoria</th>
       <th>Modello</th>
@@ -46,7 +47,7 @@
   <tbody>
     {% for c in items %}
     <tr onclick="location.href='/components/{{ c.id }}'">
-      <td class="mono">{{ c.object_code or '—' }}</td>
+      <td class="mono">{{ c.serial_number or '—' }}</td>
       <td class="strong">{{ c.name }}</td>
       <td>{% if c.category %}<span class="chip">{{ c.category }}</span>{% else %}—{% endif %}</td>
       <td>{{ c.model or '—' }}</td>

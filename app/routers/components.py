@@ -231,6 +231,41 @@ def delete_component(comp_id: int, request: Request, db: Session = Depends(get_d
     return RedirectResponse(url="/components", status_code=303)
 
 
+@router.post("/components/{comp_id}/duplicate")
+def duplicate_component(comp_id: int, request: Request, db: Session = Depends(get_db)):
+    src = db.query(Component).get(comp_id)
+    if not src:
+        flash(request, "Componente non trovato.", "error")
+        return RedirectResponse(url="/components", status_code=303)
+
+    # Copia i campi "noiosi" (modello, categoria, attributi...) ma azzera i
+    # campi unici per unita: codice oggetto e seriale. Nuova unita a magazzino.
+    copy = Component(
+        object_code="",
+        name=(src.name + " (copia)")[:160],
+        category=src.category,
+        model=src.model,
+        manufacturer=src.manufacturer,
+        serial_number="",
+        quantity=src.quantity,
+        status=STATUS_STOCK,
+        location=src.location,
+        notes=src.notes,
+        attributes=dict(src.attributes or {}),
+        machine_id=None,
+    )
+    db.add(copy)
+    db.flush()
+    db.add(Movement(
+        component_id=copy.id,
+        action="created",
+        note=f"Duplicato da: {src.name}",
+    ))
+    db.commit()
+    flash(request, "Componente duplicato. Inserisci seriale e codice oggetto.")
+    return RedirectResponse(url=f"/components/{copy.id}/edit", status_code=303)
+
+
 @router.get("/movements")
 def movements(request: Request, db: Session = Depends(get_db)):
     items = db.query(Movement).order_by(Movement.timestamp.desc()).limit(200).all()

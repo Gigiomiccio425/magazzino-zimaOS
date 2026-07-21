@@ -19,8 +19,19 @@ Stack: **FastAPI + SQLite**, tutto in **un container Docker**. Pensato per **Zim
   mostra tutto l'hardware montato.
 - **Movimenti**: ogni spostamento o cambio di stato viene registrato nello storico.
 - **Ricerca e filtri** per testo, categoria, stato, macchina.
+- **Scanner codici (fotocamera)**: leggi seriali e codici a barre / QR con la fotocamera
+  del telefono. Pulsante nei campi Seriale / Codice oggetto e ricerca "Scan" nella lista.
+- **Duplica componente**: clona un componente (copia categoria, modello, attributi...)
+  azzerando seriale e codice, cosi non ricompili tutto.
 - **Login** con password unica.
 - **Dashboard** con statistiche e grafico per categoria.
+
+> **Scanner e fotocamera — requisito HTTPS.** I browser danno accesso alla fotocamera
+> solo in **contesto sicuro** (HTTPS o `localhost`). Su `http://IP-ZIMA:8086` la
+> fotocamera e' **bloccata dal browser** (non dall'app): il pulsante scan avvisa e puoi
+> inserire il codice a mano. Per usare la fotocamera apri l'app via HTTPS — es. accesso
+> remoto ZimaOS (dominio *.zimaos con TLS) o un reverse proxy con certificato.
+> Funziona su Chrome Android; iOS Safari non supporta ancora `BarcodeDetector`.
 
 ---
 
@@ -53,7 +64,7 @@ Install "solo inserendo il file": nessun sorgente da copiare, nessuna build sul 
    ```yaml
    services:
      magazzino:
-       image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.0.0
+       image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.1.0
        container_name: magazzino
        pull_policy: always
        ports:

@@ -31,12 +31,12 @@
   <div class="table-wrap">
   <table class="table">
     <thead>
-      <tr><th>Codice</th><th>Nome</th><th>Categoria</th><th>Modello</th><th>Qta</th><th>Stato</th><th></th></tr>
+      <tr><th>Seriale</th><th>Nome</th><th>Categoria</th><th>Modello</th><th>Qta</th><th>Stato</th><th></th></tr>
     </thead>
     <tbody>
       {% for c in components %}
       <tr onclick="location.href='/components/{{ c.id }}'">
-        <td class="mono">{{ c.object_code or '—' }}</td>
+        <td class="mono">{{ c.serial_number or '—' }}</td>
         <td class="strong">{{ c.name }}</td>
         <td>{% if c.category %}<span class="chip">{{ c.category }}</span>{% else %}—{% endif %}</td>
         <td>{{ c.model or '—' }}</td>

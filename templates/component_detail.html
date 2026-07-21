@@ -9,11 +9,14 @@
     <div class="detail-meta">
       {% if component.category %}<span class="chip">{{ component.category }}</span>{% endif %}
       <span class="status status--{{ component.status }}">{{ STATUSES.get(component.status, component.status) }}</span>
-      {% if component.object_code %}<span class="mono detail-code">#{{ component.object_code }}</span>{% endif %}
+      {% if component.serial_number %}<span class="mono detail-code">S/N {{ component.serial_number }}</span>{% endif %}
     </div>
   </div>
   <div class="detail-actions">
     <a href="/components/{{ component.id }}/edit" class="btn btn--red">Modifica</a>
+    <form method="post" action="/components/{{ component.id }}/duplicate" class="detail-dup">
+      <button type="submit" class="btn btn--black">Duplica</button>
+    </form>
     <a href="/components" class="btn btn--ghost">&larr; Lista</a>
   </div>
 </div>
@@ -22,6 +25,7 @@
   <section class="panel">
     <div class="panel__head"><h2 class="panel__title">Dettagli</h2></div>
     <dl class="specs">
+      <div class="spec"><dt>Codice oggetto</dt><dd class="mono">{{ component.object_code or '—' }}</dd></div>
       <div class="spec"><dt>Modello</dt><dd>{{ component.model or '—' }}</dd></div>
       <div class="spec"><dt>Produttore</dt><dd>{{ component.manufacturer or '—' }}</dd></div>
       <div class="spec"><dt>Seriale</dt><dd class="mono">{{ component.serial_number or '—' }}</dd></div>

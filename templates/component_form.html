@@ -16,7 +16,10 @@
 
     <label class="field">
       <span class="field__label">Codice oggetto</span>
-      <input type="text" name="object_code" class="input mono" value="{{ component.object_code if editing else '' }}">
+      <div class="input-scan">
+        <input type="text" name="object_code" class="input mono" value="{{ component.object_code if editing else '' }}">
+        <button type="button" class="btn--scan" data-scan-target="object_code" title="Scansiona">&#128247;</button>
+      </div>
     </label>
 
     <label class="field">
@@ -40,7 +43,10 @@
 
     <label class="field">
       <span class="field__label">Numero seriale</span>
-      <input type="text" name="serial_number" class="input mono" value="{{ component.serial_number if editing else '' }}">
+      <div class="input-scan">
+        <input type="text" name="serial_number" class="input mono" value="{{ component.serial_number if editing else '' }}">
+        <button type="button" class="btn--scan" data-scan-target="serial_number" title="Scansiona">&#128247;</button>
+      </div>
     </label>
 
     <label class="field">

@@ -201,6 +201,14 @@ h1, h2, h3 {
 .btn--red { background: var(--red); color: var(--white); }
 .btn--black { background: var(--black); color: var(--paper); }
 .btn--ghost { background: transparent; }
+/* Ghost visibile su sfondo scuro (sidebar) */
+.btn--outline-light {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--paper);
+  box-shadow: 4px 4px 0 var(--red);
+}
+.btn--outline-light:hover { background: var(--red); border-color: var(--red); color: var(--white); box-shadow: 6px 6px 0 var(--black); }
 .btn--danger { background: var(--white); color: var(--red-dark); border-color: var(--red-dark); box-shadow: 4px 4px 0 var(--red-dark); }
 .btn--danger:hover { box-shadow: 6px 6px 0 var(--red-dark); }
 .btn--block { width: 100%; }
@@ -445,4 +453,52 @@ select.input { cursor: pointer; }
   .content, .topbar, .flashes { padding-left: 18px; padding-right: 18px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .inline-form { margin-left: 0; }
+}
+
+/* ---------- Input + pulsante scansione ---------- */
+.input-scan { display: flex; gap: 8px; align-items: stretch; }
+.input-scan .input { flex: 1; }
+.btn--scan {
+  flex-shrink: 0;
+  padding: 0 14px;
+  background: var(--black);
+  color: var(--paper);
+  border: 3px solid var(--black);
+  box-shadow: var(--shadow-sm);
+  font-size: 18px;
+  cursor: pointer;
+}
+.btn--scan:hover { background: var(--red); border-color: var(--red); transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--black); }
+
+/* ---------- Overlay scanner fotocamera ---------- */
+.scanner-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(17,17,17,.92);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  animation: flashIn .18s ease;
+}
+.scanner-box {
+  background: var(--paper); border: 4px solid var(--red); box-shadow: var(--shadow);
+  width: 100%; max-width: 420px; overflow: hidden;
+}
+.scanner-head {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--black); color: var(--paper); padding: 12px 16px;
+}
+.scanner-title { font-weight: 900; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; }
+.scanner-close {
+  background: var(--red); color: var(--white); border: none;
+  width: 34px; height: 34px; font-size: 22px; line-height: 1; cursor: pointer;
+}
+.scanner-view { position: relative; background: #000; aspect-ratio: 4 / 3; }
+.scanner-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scanner-reticle {
+  position: absolute; inset: 18% 12%;
+  border: 3px solid var(--red);
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,.25);
+  pointer-events: none;
+}
+.scanner-status {
+  padding: 12px 16px; font-weight: 700; font-size: 13px; text-align: center;
+  text-transform: uppercase; letter-spacing: .04em;
 }
