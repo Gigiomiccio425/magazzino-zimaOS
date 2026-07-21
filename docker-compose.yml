@@ -1,13 +1,14 @@
 # ============================================================
-# INSTALLAZIONE FACILE — basta questo file.
+# INSTALLAZIONE — App Store grafico ZimaOS (pull immagine da GHCR).
+# La UI di ZimaOS scarica solo immagini gia pronte: NON builda.
+# L'immagine viene pubblicata da GitHub Actions su GHCR (GitHub stesso).
 #
-# 1. Cambia APP_PASSWORD.
-# 2. Avvia:
-#      docker compose up -d
+# Prerequisito una tantum (vedi README):
+#   1. Repo contiene .github/workflows/docker-publish.yml
+#   2. Actions ha buildato -> immagine su ghcr.io
+#   3. Package GHCR impostato "Public"
 #
-# Nessun sorgente da copiare: l'immagine viene scaricata da GHCR.
-# (Richiede che il workflow GitHub Actions abbia gia pubblicato l'immagine
-#  e che il package GHCR sia impostato "Public" una volta sola.)
+# Poi: incolla questo YAML in App Store -> Import, cambia APP_PASSWORD, avvia.
 # ============================================================
 services:
   magazzino:
@@ -24,9 +25,6 @@ services:
       - TZ=${TZ:-Europe/Rome}
       - DATA_DIR=/data
     volumes:
-      # volume nominato: dati persistenti gestiti da Docker (nessun path host)
-      - magazzino_data:/data
+      # bind mount su path host ZimaOS (persistenza dati)
+      - /DATA/AppData/magazzino:/data
     restart: unless-stopped
-
-volumes:
-  magazzino_data:

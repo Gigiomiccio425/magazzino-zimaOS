@@ -53,7 +53,7 @@ Install "solo inserendo il file": nessun sorgente da copiare, nessuna build sul 
    ```yaml
    services:
      magazzino:
-       image: ghcr.io/OWNER/REPO:latest
+       image: ghcr.io/gigiomiccio425/magazzino-zimaos:latest
        container_name: magazzino
        pull_policy: always
        ports:
@@ -64,10 +64,9 @@ Install "solo inserendo il file": nessun sorgente da copiare, nessuna build sul 
          - TZ=Europe/Rome
          - DATA_DIR=/data
        volumes:
-         - magazzino_data:/data
+         # bind mount: l'importer ZimaOS non gestisce i volumi nominati
+         - /DATA/AppData/magazzino:/data
        restart: unless-stopped
-   volumes:
-     magazzino_data:
    ```
 2. Avvia:
    ```bash
@@ -85,17 +84,15 @@ Serve solo questo file, ma la build gira sul dispositivo (piu lenta):
 ```yaml
 services:
   magazzino:
-    build: https://github.com/OWNER/REPO.git#main
+    build: https://github.com/Gigiomiccio425/magazzino-zimaOS.git#main
     container_name: magazzino
     ports:
       - "8086:8000"
     environment:
       - APP_PASSWORD=cambiami
     volumes:
-      - magazzino_data:/data
+      - /DATA/AppData/magazzino:/data
     restart: unless-stopped
-volumes:
-  magazzino_data:
 ```
 ```bash
 docker compose up -d --build
@@ -136,20 +133,12 @@ App su `http://127.0.0.1:8000` (password default `admin` se non imposti `APP_PAS
 
 ## Backup / ripristino
 
-Tutto vive in `/data/magazzino.db` (SQLite) + `/data/.secret_key`.
+Tutto vive in `magazzino.db` (SQLite) + `.secret_key`, dentro la cartella montata su `/data`.
 
-**Con volume nominato** (Opzione A/B):
-```bash
-# Backup -> file magazzino-backup.tar.gz
-docker run --rm -v magazzino_data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/magazzino-backup.tar.gz -C /data .
+- **ZimaOS (Opzione A/B)**: i file sono in `/DATA/AppData/magazzino/`. Backup = copia quella cartella (anche dal file manager ZimaOS).
+- **Sviluppo (Opzione C)**: cartella `./data/`. Backup = copiala.
 
-# Ripristino
-docker run --rm -v magazzino_data:/data -v "$PWD":/backup alpine \
-  tar xzf /backup/magazzino-backup.tar.gz -C /data
-```
-
-**Con bind mount** (Opzione C, cartella `./data`): copia direttamente la cartella `data/`.
+Ripristino: rimetti i file al loro posto e riavvia il container.
 
 ---
 
