@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="/static/favicon.svg">
 </head>
 <body>
   <div class="layout">
@@ -51,8 +51,8 @@
       <footer class="foot">MAGAZZINO &middot; {{ current_year }} &middot; SELF-HOSTED</footer>
     </main>
   </div>
-  <script src="{{ url_for('static', path='js/app.js') }}"></script>
-  <script src="{{ url_for('static', path='js/scanner.js') }}"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/scanner.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

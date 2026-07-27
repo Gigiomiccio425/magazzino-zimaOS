@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from . import config
 from .database import Base, SessionLocal, engine
@@ -39,6 +40,12 @@ app.add_middleware(
     max_age=60 * 60 * 24 * 30,
     same_site="lax",
 )
+
+# Dietro reverse proxy HTTPS (es. `tailscale serve`, Caddy, Nginx): rispetta gli
+# header X-Forwarded-Proto / X-Forwarded-For inviati dal proxy, cosi lo scheme
+# risulta https e i redirect/URL assoluti non tornano a http. Registrato per
+# ultimo -> e' il middleware piu esterno, corregge la richiesta prima degli altri.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 
 @app.on_event("startup")

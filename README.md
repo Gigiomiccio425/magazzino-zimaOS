@@ -64,7 +64,7 @@ Install "solo inserendo il file": nessun sorgente da copiare, nessuna build sul 
    ```yaml
    services:
      magazzino:
-       image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.1.0
+       image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.1.1
        container_name: magazzino
        pull_policy: always
        ports:
