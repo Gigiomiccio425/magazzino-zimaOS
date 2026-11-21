@@ -1,4 +1,5 @@
 """Entry point FastAPI: factory, lifespan, middleware, routing."""
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -8,9 +9,12 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from .config import load_settings
-from .database import Base, make_engine
+from .database import make_engine
+from .migrations.runner import run_migrations
 from .models import Category
 from .routers import auth, components, dashboard, machines
+
+log = logging.getLogger("magazzino")
 
 DEFAULT_CATEGORIES = [
     "RAM", "SSD", "HDD", "CPU", "GPU", "Scheda madre", "Alimentatore",
@@ -23,9 +27,11 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        report = run_migrations(settings.db_path, settings.backups_dir)
+        if report.from_version != report.to_version:
+            log.info("Schema DB: v%s -> v%s (backup: %s)", report.from_version, report.to_version, report.backup_path)
         engine = make_engine(settings.db_path)
         app.state.engine = engine
-        Base.metadata.create_all(bind=engine)
         with Session(bind=engine) as db:
             if db.query(Category).count() == 0:
                 db.add_all(Category(name=n) for n in DEFAULT_CATEGORIES)

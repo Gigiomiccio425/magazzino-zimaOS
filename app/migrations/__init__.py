@@ -1,0 +1,1 @@
+"""Migrazioni dello schema SQLite."""
