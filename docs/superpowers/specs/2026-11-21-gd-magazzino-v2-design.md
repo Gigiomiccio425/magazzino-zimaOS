@@ -28,7 +28,10 @@ dove sapere cosa c'è, dove sta, se funziona, e cosa succede sui servizi.
 **Obiettivi**
 - Nessun dato esistente perso o alterato: `magazzino.db` e `.secret_key` sopravvivono a ogni update.
 - Accesso sbloccato: niente password applicativa, login Umbrel obbligatorio davanti.
-- Tutte le 40 funzioni approvate (sezioni 8–14), consegnate in 4 release.
+- Tutte le funzioni approvate (sezioni 8–14), consegnate in 4 release.
+- **Tutto l'inserimento è manuale**: servizi, moduli, changelog, incidenti, manutenzioni, stati.
+  Nessuna automazione crea o modifica dati. **Unica automazione: l'invio dei webhook** (Discord
+  o JSON generico), più i backup di sicurezza dei dati.
 - QR su **ogni singolo prodotto** e su **ogni posizione** (stanza/scaffale/box).
 - Più operatori: alla prima firma con un nome nuovo, l'operatore registra la propria
   impronta/passkey e/o password.
@@ -87,13 +90,13 @@ app/
   models/            modelli ORM divisi per area (inventory, ops, security, system)
   migrations/        runner + migrazioni numerate (SQL grezzo, mai ORM)
   services/          logica di dominio: audit, signing, webauthn, qr, labels, discord,
-                     outbox, healthcheck, github, backup, csv_io, search, uploads
-  worker.py          scheduler asyncio interno (outbox, health check, manutenzioni,
-                     polling GitHub, backup giornaliero, avvisi giornalieri, pulizia)
+                     outbox, links, backup, csv_io, search, uploads
+  worker.py          task asyncio interno con due soli compiti: consegna webhook
+                     (outbox) e backup giornaliero del DB
   routers/           dashboard, components, locations, machines, movements, audits,
                      projects, tests, services, changes, incidents, problems,
-                     maintenance, status, operators, sign, webhooks, api_tokens,
-                     backups, audit_log, settings, search, qr, labels, attachments, api_v1
+                     maintenance, status, operators, sign, webhooks,
+                     backups, audit_log, settings, search, qr, labels, attachments
 templates/           Jinja2 (base + partial riusabili + pagine per area)
 static/
   css/style.css      design system costruttivista (token chiaro/scuro)
@@ -114,12 +117,12 @@ tests/               pytest (+ fixture DB v1.1.1)
   `img-src 'self' data: blob:`), `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: same-origin`, `frame-ancestors 'self'`, `Permissions-Policy: camera=(self)`.
 - **CSRF**: token per sessione in un campo nascosto in ogni form POST e in un header per le
-  chiamate `fetch`; verificato da un middleware su tutti i metodi non sicuri (escluse
-  `/api/v1` con token Bearer).
+  chiamate `fetch`; verificato da un middleware su tutti i metodi non sicuri.
+- Nessuna chiamata di rete in uscita tranne l'invio dei webhook configurati.
 - Navigazione raggruppata: **Dashboard** · **Magazzino** (Componenti, Posizioni, Macchine,
   Movimenti, Inventari, Progetti) · **Verifica** (Test, Modelli test) · **Centro comando**
   (Servizi, Incidenti, Problemi noti, Manutenzioni, Changelog, Stato) · **Sistema**
-  (Operatori, Webhook, API token, Backup, Audit log, Impostazioni).
+  (Operatori, Webhook, Backup, Audit log, Impostazioni).
 
 ## 6. Modello dati
 
@@ -171,19 +174,17 @@ indicati qui sotto (che aggiungono valori in colonne nuove).
   values JSON, checklist JSON, tool, notes, started_at, finished_at, operator_id, signature_id).
 
 **Centro comando**
-- `services` (id, slug, name, machine_id, description, url, status_manual, status_computed,
-  runbook_md, check_type: none/http/tcp, check_target, check_interval_s, check_expect,
-  check_timeout_s, deleted_at).
+- `services` (id, slug, name, machine_id, description, url, status, runbook_md, deleted_at).
 - `service_modules` (id, service_id, name, kind: web/app_pc/app_android/app_ios/bot/api/
   worker/db/altro, current_version, repo_url, notes).
-- `service_checks` (id, service_id, ts, ok, latency_ms, detail) — conservati 30 giorni.
 - `changes` (changelog: id, service_id, module_id, type: release/update/fix/debug/feature/
-  config/rollback/note, version, title, body_md, occurred_at, auto, operator_id, signature_id).
-- `links` (id, entity_type, entity_id, url, kind: github_commit/github_pr/github_issue/
-  github_release/github_repo/altro, owner, repo, ref, meta JSON, meta_fetched_at).
+  config/rollback/note, version, title, body_md, occurred_at, operator_id, signature_id).
+- `links` (id, entity_type, entity_id, url, title (scritto dall'operatore), kind:
+  github_commit/github_pr/github_issue/github_release/github_repo/altro, owner, repo, ref).
+  `kind`, `owner`, `repo`, `ref` sono ricavati solo leggendo l'URL, senza chiamate a GitHub.
 - `incidents` (id, title, severity SEV1–SEV4, status: aperto/in_analisi/identificato/
   monitoraggio/risolto, started_at, resolved_at, summary, root_cause, postmortem_md,
-  auto, operator_id), `incident_services`, `incident_updates` (incident_id, status, message,
+  operator_id), `incident_services`, `incident_updates` (incident_id, status, message,
   created_at, operator_id, signature_id, notified).
 - `problems` (problemi noti: id, title, description_md, workaround_md, status: aperto/
   workaround/risolto), `problem_services`, `problem_incidents`.
@@ -195,9 +196,6 @@ indicati qui sotto (che aggiungono valori in colonne nuove).
   service_ids JSON o null = tutti, mention_role_id per SEV1, username, avatar_url).
 - `outbox` (id, webhook_id, event, payload JSON, status: pending/sent/failed/dead,
   attempts, next_attempt_at, last_error, created_at, sent_at).
-- `api_tokens` (id, name, prefix, token_hash, scopes: read/write, created_at, last_used_at,
-  revoked_at).
-- `github_cache` (url, etag, body JSON, fetched_at).
 
 **Sicurezza e sistema**
 - `operators` (id, name unico case-insensitive, is_admin, active, password_hash (scrypt),
@@ -206,8 +204,8 @@ indicati qui sotto (che aggiungono valori in colonne nuove).
   transports, rp_id, label dispositivo, created_at, last_used_at).
 - `signatures` (id, operator_id, method: passkey/password, purpose, action_hash, rp_id,
   ip, user_agent, created_at).
-- `audit_log` (id, ts, actor_type: operator/system/api, operator_id, api_token_id,
-  signature_id, entity_type, entity_id, action, before JSON, after JSON, prev_hash, hash).
+- `audit_log` (id, ts, actor_type: operator/system, operator_id, signature_id,
+  entity_type, entity_id, action, before JSON, after JSON, prev_hash, hash).
 - `settings` (key, value JSON).
 
 ### 6.3 Backfill delle posizioni
@@ -234,7 +232,7 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
   che possa sovrascrivere dati.
 - **Backup giornaliero** automatico del DB alle 03:00 in `/data/backups/giornalieri/`, 14 conservati.
 - **Allegati** in `/data/uploads/AAAA/MM/<uuid>.<ext>`: file mai modificati; l'eliminazione
-  sposta in `/data/uploads/.cestino/` per 30 giorni.
+  sposta in `/data/uploads/.cestino/`, svuotato solo a mano (nessuna pulizia automatica).
 - **Backup manuale da interfaccia**: zip con snapshot consistente del DB + allegati + manifest
   (versione app, versione schema, data). **Ripristino**: carica zip o scegli un backup,
   verifica integrità e tabelle attese, backup automatico dello stato attuale, sostituzione,
@@ -252,8 +250,7 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
 - Rimossi login applicativo, `APP_PASSWORD`, middleware `require_login`. `/login` reindirizza a `/`.
 - Compose Umbrel: `PROXY_AUTH_ADD: "true"` (login Umbrel obbligatorio), variabile
   `APP_PASSWORD` rimossa. `SessionMiddleware` resta (flash, sessione di firma, CSRF).
-- L'API `/api/v1` è raggiungibile dagli altri container Umbrel (es. n8n) sulla rete Docker
-  interna, senza passare dall'app proxy, ma solo con token Bearer.
+- Nessuna API di scrittura per sistemi esterni: i dati entrano solo dall'interfaccia, firmati.
 
 ### 8.2 Operatori e prima firma
 - Ogni modifica richiede un operatore firmato. Alla prima modifica dal dispositivo compare il
@@ -273,7 +270,7 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
 - Dopo una firma, il dispositivo resta firmato da quell'operatore per **10 minuti**
   (configurabile 0–60; 0 = firma a ogni modifica). Barra in alto: "Firmato: NOME · 7 min · Esci".
 - Le **azioni critiche** chiedono sempre una firma nuova legata all'azione: eliminazioni,
-  svuotamento cestino, ripristino backup, impostazioni, webhook, operatori, token API,
+  svuotamento cestino, ripristino backup, impostazioni, webhook, operatori,
   modifiche di massa con eliminazione. Per le passkey la challenge include l'hash dell'azione
   (`metodo + path + campi principali`): la firma vale solo per quell'azione, una volta, per 2 minuti.
 - Lato server: dipendenza `require_signer(critical=False)` su tutte le rotte di scrittura.
@@ -291,8 +288,7 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
   azione, prima/dopo (solo campi cambiati).
 - **Catena di hash**: `hash = sha256(prev_hash + json canonico della riga)`. Pagina
   "Verifica integrità" che ricalcola la catena e segnala il primo punto alterato.
-- Attori non umani: `system` (health check, polling GitHub, manutenzioni automatiche),
-  `api` (token, con nome del token).
+- Unico attore non umano: `system`, solo per migrazioni e backup. Tutto il resto è firmato da un operatore.
 
 ## 9. Catalogo
 
@@ -361,37 +357,42 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
 - **Server → Servizi → Moduli**. Il server è una `machine` (tipo server). Un servizio (Immich,
   Jellyfin, un bot Discord…) ha moduli (app web, app PC, app Android/iOS, bot, API, worker, DB)
   con versione corrente e repo GitHub.
+**Tutto manuale.** Servizi, moduli, versioni, changelog, incidenti, problemi e manutenzioni
+vengono inseriti e aggiornati solo dagli operatori, con firma. Nessun import, polling o
+controllo automatico.
+
 - **Stato servizio** (standard delle status page): Operativo, Degradato, Disservizio parziale,
-  Disservizio grave, Manutenzione. Calcolato da incidenti aperti, health check e manutenzioni;
-  modificabile a mano.
+  Disservizio grave, Manutenzione. Impostato a mano dall'operatore. Quando si apre un incidente
+  o si avvia una manutenzione, il form propone di aggiornare lo stato dei servizi coinvolti
+  (l'operatore conferma).
 - **Changelog** per servizio/modulo: rilascio, aggiornamento, fix, debug, funzione, configurazione,
-  rollback, nota. Corpo in markdown, link multipli, allegati. Pubblicazione opzionale su Discord.
-- **Link GitHub** riconosciuti (commit, PR, issue, release, repo) con anteprima: titolo, stato
-  (aperta/chiusa/unita), autore, data. API GitHub con cache di 1 ora e `ETag`; `GITHUB_TOKEN`
-  facoltativo per alzare i limiti.
+  rollback, nota. Corpo in markdown, link multipli, allegati. Registrando un rilascio si può
+  aggiornare nello stesso form la versione corrente del modulo. Pubblicazione opzionale su Discord.
+- **Link GitHub** (commit, PR, issue, release, repo): l'operatore incolla l'URL e scrive un titolo;
+  tipo, repo e numero vengono ricavati dall'URL e mostrati con un'etichetta. Nessuna chiamata a GitHub.
 - **Incidenti**: gravità SEV1–SEV4, servizi colpiti, stati Aperto → In analisi → Identificato →
   Monitoraggio → Risolto, cronologia di aggiornamenti (ognuno pubblicabile su Discord), causa,
   post-mortem in markdown, collegamento a problemi noti.
 - **Problemi noti**: problema ricorrente con workaround, collegato a servizi e incidenti.
-- **Manutenzioni programmate**: inizio/fine, servizi coinvolti; il worker le avvia e le chiude
-  all'orario e invia gli eventi.
-- **Health check**: HTTP(S) (codice atteso, timeout, parola chiave facoltativa) o TCP, intervallo
-  default 60 s (minimo 30 s). 3 fallimenti di fila → servizio "Disservizio grave" e **incidente
-  automatico** SEV3 (uno solo aperto per servizio). 2 successi di fila → aggiornamento "Ripristinato"
-  e incidente in Monitoraggio; risolto dopo 10 minuti stabili. Disponibilità 24 h / 7 g / 30 g.
-  Destinazioni tipiche: nome container Docker sulla rete Umbrel o IP del server.
+- **Manutenzioni programmate**: inizio/fine previsti, servizi coinvolti. L'operatore preme
+  "Avvia" e "Completa" (o "Annulla"); ogni passaggio può essere pubblicato su Discord.
+  Le manutenzioni in ritardo sono solo evidenziate, mai cambiate da sole.
 - **Runbook** per servizio (markdown): come riavviare, porte, dipendenze, dove sono i log.
   Avviso fisso: non inserire password.
-- **Pagina di stato** `/status` in sola lettura: servizi, incidenti attivi, manutenzioni,
-  barre di disponibilità 30 giorni. Resta dietro il login Umbrel (vedi 15).
+- **Pagina di stato** `/status` in sola lettura: servizi con stato attuale, incidenti attivi,
+  manutenzioni, storico incidenti 30 giorni. Resta dietro il login Umbrel (vedi 15).
 
 ## 12. Notifiche Discord (e webhook generici)
 
 - Più webhook, ognuno con: tipo (Discord o JSON generico, per n8n), eventi scelti, gravità minima,
   servizi filtrati, ruolo da menzionare solo per SEV1, nome e avatar facoltativi.
-- Eventi: `incident.opened`, `incident.updated`, `incident.resolved`, `maintenance.scheduled`,
-  `maintenance.started`, `maintenance.completed`, `change.published`, `healthcheck.down`,
-  `healthcheck.up`, `stock.low`, `warranty.expiring`, `test.failed`, `audit.completed`.
+- Eventi (tutti generati da un'azione manuale di un operatore): `incident.opened`,
+  `incident.updated`, `incident.resolved`, `maintenance.scheduled`, `maintenance.started`,
+  `maintenance.completed`, `maintenance.cancelled`, `change.published`, `service.status_changed`,
+  `stock.low` (quando una modifica manuale porta la scorta sotto il minimo), `test.failed`,
+  `audit.completed`.
+- Ogni form che genera un evento ha la casella **"Pubblica su Discord"**, preimpostata dalle
+  regole dei webhook; l'operatore può toglierla per quella singola azione.
 - Embed Discord: titolo `[SEV2] Titolo`, colore per gravità/evento nella palette costruttivista
   (SEV1 rosso `#e2231a`, SEV2 arancio, SEV3 giallo `#f4c20d`, SEV4 grigio, risolto verde scuro),
   campi Stato / Servizi / Operatore / Inizio, link alla pagina se `URL_BASE` è impostato.
@@ -403,15 +404,15 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
 
 ## 13. Integrazioni
 
-- **Polling release GitHub**: per ogni modulo con repo, ogni 6 ore (ETag); una release nuova crea
-  una voce di changelog automatica (tipo Rilascio) e l'evento `change.published`.
-- **Webhook GitHub in entrata** `/hooks/github` con firma HMAC (`X-Hub-Signature-256`): pronto ma
-  utilizzabile solo quando il server sarà esposto (richiede `PROXY_AUTH_WHITELIST`); documentato.
-- **API REST `/api/v1`** con token Bearer (salvati come hash, mostrati una sola volta, scope
-  lettura/scrittura): componenti, posizioni, ricerca, servizi, changelog (POST), incidenti e
-  aggiornamenti (POST), test (POST). Documentazione OpenAPI su `/api/docs`. Scritture registrate
-  nell'audit log come attore `api`.
-- **Import app da Umbrel**: vedi domanda aperta in 17.
+**Unica integrazione: webhook in uscita** (sezione 12). Decisione dell'utente: niente automazioni,
+per evitare problemi. Quindi **esclusi**:
+- import automatico delle app da Umbrel (niente accesso a Docker);
+- polling delle release GitHub e webhook GitHub in entrata;
+- anteprime che interrogano l'API GitHub;
+- API REST e token per sistemi esterni (n8n, bot);
+- health check automatici e incidenti aperti da soli.
+
+Il webhook JSON generico resta disponibile, così n8n può *ricevere* gli eventi senza poter scrivere dati.
 
 ## 14. UX, accessibilità, PWA
 
@@ -441,7 +442,7 @@ Lavoro su branch `dev/v2`; ogni fase viene unita a `main` e taggata. Ogni releas
 | **v1.2.0 — Fondamenta** | Password rimossa, login Umbrel obbligatorio, migrazioni + backup pre-migrazione, backup giornaliero, backup/ripristino da UI, soft delete, CSRF, header sicurezza, `lifespan`, prime correzioni accessibilità (niente `alert()`, focus, contrasto, skip link), test + CI |
 | **v1.3.0 — Firma e tracciabilità** | Operatori, prima firma con registrazione, passkey + password, sessione di firma, azioni critiche, audit log con catena di hash |
 | **v1.4.0 — Catalogo e verifica** | Sezioni 9 e 10, barra mobile, tema scuro, PWA, ricerca Ctrl+K |
-| **v2.0.0 — Centro di comando** | Sezioni 11, 12, 13 |
+| **v2.0.0 — Centro di comando** | Sezioni 11 e 12 (tutto manuale + webhook) |
 
 Compose Umbrel dalla v1.2.0:
 ```yaml
@@ -476,7 +477,8 @@ senza password l'app va tenuta dietro un proxy con autenticazione.
   scadenza sessione; azioni critiche monouso; blocco dopo tentativi errati.
 - Audit: catena di hash valida, alterazione rilevata.
 - Discord: costruzione payload, nessuna menzione di default, tentativi e `429`.
-- Health check: macchina a stati (3 fallimenti → incidente, 2 successi → monitoraggio, 10 min → risolto).
+- Nessun dato creato senza operatore: ogni riga nuova di servizi, changelog, incidenti e
+  manutenzioni ha `operator_id` e `signature_id`.
 - CSV andata/ritorno, backup/ripristino, QR e risoluzione `/q/{tag}`, upload (rimozione EXIF, tipi rifiutati).
 - Controllo manuale nel browser (desktop + telefono) prima di ogni release.
 
@@ -492,19 +494,17 @@ senza password l'app va tenuta dietro un proxy con autenticazione.
 6. Soft delete con cestino al posto delle eliminazioni definitive.
 7. Pagina `/status` dietro il login Umbrel (login obbligatorio come richiesto); si può esporre in
    seguito con `PROXY_AUTH_WHITELIST`.
-8. Webhook GitHub in entrata pronto ma non attivo finché il server non è esposto; il polling delle
-   release copre il caso attuale.
+8. Link GitHub senza anteprima automatica: titolo scritto dall'operatore, tipo ricavato dall'URL.
 9. QR con URL completo (`/q/{tag}`) per aprire la scheda anche dalla fotocamera di sistema.
 10. Rimozione dei metadati EXIF/GPS dalle foto.
 11. Nessun ripristino automatico in caso di migrazione fallita: l'app si ferma e il file resta intatto.
+12. I backup automatici (pre-migrazione e giornaliero) restano: proteggono i dati e non inseriscono
+    né modificano nulla.
+13. Garanzie in scadenza e inventari in ritardo: solo evidenziati in dashboard, nessun avviso automatico.
 
-**Domanda aperta per l'utente — Import app da Umbrel (funzione 27).**
-Dall'interno del container non si vede l'elenco delle app Umbrel. L'unico modo affidabile è dare
-accesso in **sola lettura** all'API Docker tramite un piccolo proxy (`docker-socket-proxy`, solo
-endpoint container). Vantaggio: elenco servizi importato da solo + stato reale dei container
-(avviato/fermo/riavvii) nel centro di comando. Rischio: quell'endpoint espone anche le variabili
-d'ambiente degli altri container (che possono contenere segreti). Alternativa senza rischio:
-inserimento manuale dei servizi con suggerimenti. Va deciso prima della v2.0.0.
+**Deciso dall'utente (21/11/2026):** inserimento tutto manuale (servizi, moduli, changelog,
+modifiche); nessuna automazione; unica automazione ammessa: i webhook in uscita. Funzioni 26, 27,
+30 e 31 escluse (vedi 13).
 
 ## 18. Lasciato a chi costruisce
 
