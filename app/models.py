@@ -1,5 +1,5 @@
 """Modelli dati: Macchina, Componente, Movimento, Categoria."""
-from datetime import datetime
+from .timeutil import utcnow
 
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
@@ -28,7 +28,7 @@ class Machine(Base):
     kind = Column(String(60), default="")        # desktop / server / laptop / NAS ...
     location = Column(String(160), default="")   # dove si trova fisicamente la macchina
     description = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     components = relationship("Component", back_populates="machine")
 
@@ -53,8 +53,8 @@ class Component(Base):
     machine_id = Column(Integer, ForeignKey("machines.id"), nullable=True)
     machine = relationship("Machine", back_populates="components")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     movements = relationship(
         "Movement",
@@ -74,7 +74,7 @@ class Movement(Base):
     from_machine = Column(String(120), default="")
     to_machine = Column(String(120), default="")
     note = Column(Text, default="")
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utcnow)
 
     component = relationship("Component", back_populates="movements")
 

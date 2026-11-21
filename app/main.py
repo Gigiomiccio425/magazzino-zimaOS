@@ -1,21 +1,16 @@
-"""Entry point FastAPI: middleware auth, static, startup, routing."""
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware
-from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+"""Entry point FastAPI: factory, lifespan, middleware, routing."""
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-from . import config
-from .database import Base, SessionLocal, engine
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
+
+from .config import load_settings
+from .database import Base, make_engine
 from .models import Category
 from .routers import auth, components, dashboard, machines
-
-app = FastAPI(title="Magazzino Hardware", docs_url=None, redoc_url=None)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Percorsi accessibili senza login
-PUBLIC_PREFIXES = ("/login", "/static", "/health", "/favicon.ico")
 
 DEFAULT_CATEGORIES = [
     "RAM", "SSD", "HDD", "CPU", "GPU", "Scheda madre", "Alimentatore",
@@ -23,51 +18,39 @@ DEFAULT_CATEGORIES = [
 ]
 
 
-# NB ordine middleware: require_login registrato PRIMA, SessionMiddleware DOPO.
-# Starlette rende outermost l'ultimo aggiunto -> Session gira per prima e popola
-# request.session, poi require_login puo leggerla senza errori.
-@app.middleware("http")
-async def require_login(request: Request, call_next):
-    path = request.url.path
-    if not any(path.startswith(p) for p in PUBLIC_PREFIXES) and not request.session.get("auth"):
-        return RedirectResponse(url="/login", status_code=303)
-    return await call_next(request)
+def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True) -> FastAPI:
+    settings = load_settings(data_dir)
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        engine = make_engine(settings.db_path)
+        app.state.engine = engine
+        Base.metadata.create_all(bind=engine)
+        with Session(bind=engine) as db:
+            if db.query(Category).count() == 0:
+                db.add_all(Category(name=n) for n in DEFAULT_CATEGORIES)
+                db.commit()
+        try:
+            yield
+        finally:
+            engine.dispose()
 
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=config.get_secret_key(),
-    max_age=60 * 60 * 24 * 30,
-    same_site="lax",
-)
+    app = FastAPI(title="Magazzino Hardware", docs_url=None, redoc_url=None, lifespan=lifespan)
+    app.state.settings = settings
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.secret_key,
+        max_age=60 * 60 * 24 * 30,
+        same_site="lax",
+    )
 
-# Dietro reverse proxy HTTPS (es. `tailscale serve`, Caddy, Nginx): rispetta gli
-# header X-Forwarded-Proto / X-Forwarded-For inviati dal proxy, cosi lo scheme
-# risulta https e i redirect/URL assoluti non tornano a http. Registrato per
-# ultimo -> e' il middleware piu esterno, corregge la richiesta prima degli altri.
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+    @app.get("/health")
+    def health():
+        return {"status": "ok"}
 
-
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
-    # Seed categorie predefinite (solo se tabella vuota)
-    db = SessionLocal()
-    try:
-        if db.query(Category).count() == 0:
-            for name in DEFAULT_CATEGORIES:
-                db.add(Category(name=name))
-            db.commit()
-    finally:
-        db.close()
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-app.include_router(auth.router)
-app.include_router(dashboard.router)
-app.include_router(components.router)
-app.include_router(machines.router)
+    app.include_router(auth.router)
+    app.include_router(dashboard.router)
+    app.include_router(components.router)
+    app.include_router(machines.router)
+    return app

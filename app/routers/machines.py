@@ -52,7 +52,7 @@ def create_machine(
 
 @router.get("/machines/{machine_id}")
 def machine_detail(machine_id: int, request: Request, db: Session = Depends(get_db)):
-    m = db.query(Machine).get(machine_id)
+    m = db.get(Machine, machine_id)
     if not m:
         flash(request, "Macchina non trovata.", "error")
         return RedirectResponse(url="/machines", status_code=303)
@@ -62,7 +62,7 @@ def machine_detail(machine_id: int, request: Request, db: Session = Depends(get_
 
 @router.get("/machines/{machine_id}/edit")
 def edit_machine(machine_id: int, request: Request, db: Session = Depends(get_db)):
-    m = db.query(Machine).get(machine_id)
+    m = db.get(Machine, machine_id)
     if not m:
         flash(request, "Macchina non trovata.", "error")
         return RedirectResponse(url="/machines", status_code=303)
@@ -79,7 +79,7 @@ def update_machine(
     description: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    m = db.query(Machine).get(machine_id)
+    m = db.get(Machine, machine_id)
     if not m:
         flash(request, "Macchina non trovata.", "error")
         return RedirectResponse(url="/machines", status_code=303)
@@ -94,7 +94,7 @@ def update_machine(
 
 @router.post("/machines/{machine_id}/delete")
 def delete_machine(machine_id: int, request: Request, db: Session = Depends(get_db)):
-    m = db.query(Machine).get(machine_id)
+    m = db.get(Machine, machine_id)
     if m:
         # I componenti tornano a magazzino (machine_id = NULL)
         for comp in db.query(Component).filter(Component.machine_id == m.id).all():

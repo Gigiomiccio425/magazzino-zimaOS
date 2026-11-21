@@ -43,7 +43,7 @@ def _ensure_category(db: Session, name: str):
 def _machine_name(db: Session, machine_id):
     if not machine_id:
         return ""
-    m = db.query(Machine).get(machine_id)
+    m = db.get(Machine, machine_id)
     return m.name if m else ""
 
 
@@ -143,7 +143,7 @@ async def create_component(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/components/{comp_id}")
 def component_detail(comp_id: int, request: Request, db: Session = Depends(get_db)):
-    comp = db.query(Component).get(comp_id)
+    comp = db.get(Component, comp_id)
     if not comp:
         flash(request, "Componente non trovato.", "error")
         return RedirectResponse(url="/components", status_code=303)
@@ -152,7 +152,7 @@ def component_detail(comp_id: int, request: Request, db: Session = Depends(get_d
 
 @router.get("/components/{comp_id}/edit")
 def edit_component(comp_id: int, request: Request, db: Session = Depends(get_db)):
-    comp = db.query(Component).get(comp_id)
+    comp = db.get(Component, comp_id)
     if not comp:
         flash(request, "Componente non trovato.", "error")
         return RedirectResponse(url="/components", status_code=303)
@@ -167,7 +167,7 @@ def edit_component(comp_id: int, request: Request, db: Session = Depends(get_db)
 
 @router.post("/components/{comp_id}/edit")
 async def update_component(comp_id: int, request: Request, db: Session = Depends(get_db)):
-    comp = db.query(Component).get(comp_id)
+    comp = db.get(Component, comp_id)
     if not comp:
         flash(request, "Componente non trovato.", "error")
         return RedirectResponse(url="/components", status_code=303)
@@ -222,7 +222,7 @@ async def update_component(comp_id: int, request: Request, db: Session = Depends
 
 @router.post("/components/{comp_id}/delete")
 def delete_component(comp_id: int, request: Request, db: Session = Depends(get_db)):
-    comp = db.query(Component).get(comp_id)
+    comp = db.get(Component, comp_id)
     if comp:
         name = comp.name
         db.delete(comp)
@@ -233,7 +233,7 @@ def delete_component(comp_id: int, request: Request, db: Session = Depends(get_d
 
 @router.post("/components/{comp_id}/duplicate")
 def duplicate_component(comp_id: int, request: Request, db: Session = Depends(get_db)):
-    src = db.query(Component).get(comp_id)
+    src = db.get(Component, comp_id)
     if not src:
         flash(request, "Componente non trovato.", "error")
         return RedirectResponse(url="/components", status_code=303)
