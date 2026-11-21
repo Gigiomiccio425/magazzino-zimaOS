@@ -1,7 +1,7 @@
 # GD Magazzino 2.0 — Documento di design
 
 Data: 2026-11-21
-Stato: in attesa di approvazione
+Stato: approvato (21/11/2026)
 Repo codice: `Gigiomiccio425/magazzino-zimaOS` — Repo app store Umbrel: `Gigiomiccio425/Gigio-dany-appstore`
 
 ---
@@ -28,7 +28,7 @@ dove sapere cosa c'è, dove sta, se funziona, e cosa succede sui servizi.
 **Obiettivi**
 - Nessun dato esistente perso o alterato: `magazzino.db` e `.secret_key` sopravvivono a ogni update.
 - Accesso sbloccato: niente password applicativa, login Umbrel obbligatorio davanti.
-- Tutte le funzioni approvate (sezioni 8–14), consegnate in 4 release.
+- Tutte le funzioni approvate (sezioni 8–14), consegnate in un’unica release v2.0.0.
 - **Tutto l'inserimento è manuale**: servizi, moduli, changelog, incidenti, manutenzioni, stati.
   Nessuna automazione crea o modifica dati. **Unica automazione: l'invio dei webhook** (Discord
   o JSON generico), più i backup di sicurezza dei dati.
@@ -236,7 +236,7 @@ Nessun testo viene modificato. L'utente poi riorganizza l'albero da interfaccia.
 - **Backup manuale da interfaccia**: zip con snapshot consistente del DB + allegati + manifest
   (versione app, versione schema, data). **Ripristino**: carica zip o scegli un backup,
   verifica integrità e tabelle attese, backup automatico dello stato attuale, sostituzione,
-  migrazioni. Azione critica (firma richiesta da v1.3.0).
+  migrazioni. Azione critica (firma richiesta).
 - **Soft delete** per componenti, macchine, posizioni, servizi: "Cestino" ripristinabile.
   Eliminazione definitiva solo dal cestino, con firma.
 - Prova di conservazione: i test applicano tutte le migrazioni a un DB fixture generato con
@@ -434,17 +434,23 @@ Il webhook JSON generico resta disponibile, così n8n può *ricevere* gli eventi
 
 ## 15. Deploy e release
 
-Lavoro su branch `dev/v2`; ogni fase viene unita a `main` e taggata. Ogni release aggiorna anche
-`Gigio-dany-appstore/g-d-app-store-gd-magazzino` (versione, immagine, note di rilascio).
+**Un'unica release definitiva: v2.0.0** (decisione dell'utente, 21/11/2026: niente rilasci
+intermedi). Tutto il contenuto delle sezioni 7–14 esce insieme.
 
-| Release | Contenuto |
-|---|---|
-| **v1.2.0 — Fondamenta** | Password rimossa, login Umbrel obbligatorio, migrazioni + backup pre-migrazione, backup giornaliero, backup/ripristino da UI, soft delete, CSRF, header sicurezza, `lifespan`, prime correzioni accessibilità (niente `alert()`, focus, contrasto, skip link), test + CI |
-| **v1.3.0 — Firma e tracciabilità** | Operatori, prima firma con registrazione, passkey + password, sessione di firma, azioni critiche, audit log con catena di hash |
-| **v1.4.0 — Catalogo e verifica** | Sezioni 9 e 10, barra mobile, tema scuro, PWA, ricerca Ctrl+K |
-| **v2.0.0 — Centro di comando** | Sezioni 11 e 12 (tutto manuale + webhook) |
+Lavoro su branch `dev/v2`. Lo sviluppo procede comunque in blocchi interni, in quest'ordine,
+ognuno con i suoi test verdi prima del successivo (nessuno viene rilasciato da solo):
+1. Fondamenta: password rimossa, migrazioni + backup, backup/ripristino, soft delete, CSRF,
+   header sicurezza, `lifespan`, test + CI.
+2. Firma e tracciabilità: operatori, prima firma, passkey + password, sessione di firma,
+   azioni critiche, audit log con catena di hash.
+3. Catalogo e verifica: sezioni 9 e 10.
+4. Centro di comando e webhook: sezioni 11 e 12.
+5. UX trasversale: sezione 14 (accessibilità, barra mobile, tema scuro, PWA, Ctrl+K, dashboard).
 
-Compose Umbrel dalla v1.2.0:
+A lavoro finito: merge su `main`, tag `v2.0.0`, immagine su GHCR, aggiornamento di
+`Gigio-dany-appstore/g-d-app-store-gd-magazzino` (versione `2.0.0`, immagine, note di rilascio).
+
+Compose Umbrel della v2.0.0:
 ```yaml
 services:
   app_proxy:
@@ -453,7 +459,7 @@ services:
       APP_PORT: 8000
       PROXY_AUTH_ADD: "true"
   magazzino:
-    image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.2.0
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.0.0
     restart: on-failure
     environment:
       APP_NAME: MAGAZZINO
