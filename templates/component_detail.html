@@ -17,6 +17,7 @@
   </div>
   <div class="detail-actions">
     <a href="/components/{{ c.id }}/edit" class="btn btn--red">Modifica</a>
+    <a href="/components/{{ c.id }}/tests/new" class="btn btn--black">Registra test</a>
     <form method="post" action="/components/{{ c.id }}/duplicate" class="detail-dup">
       {{ csrf_field() }}
       <button type="submit" class="btn btn--black">Duplica</button>
@@ -105,6 +106,23 @@
     {% else %}<p class="empty">Nessun movimento registrato.</p>{% endif %}
   </section>
 </div>
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Test ({{ test_runs|length }})</h2>
+    <a href="/components/{{ c.id }}/tests/new" class="link-more">+ Registra &rarr;</a></div>
+  {% if test_runs %}
+  <ul class="timeline">
+    {% for r in test_runs %}
+    <li class="timeline__item">
+      <span class="test-result test-result--{{ r.result }}">{{ RESULTS.get(r.result, r.result) }}</span>
+      <a class="timeline__name" href="/tests/runs/{{ r.id }}">{{ r.template.name if r.template else 'Test libero' }}</a>
+      <span class="timeline__note">{{ r.tool }}</span>
+      {% if r.operator %}<span class="muted">{{ r.operator.name }}</span>{% endif %}
+      <time class="timeline__time">{{ r.finished_at|dt }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nessun test registrato.</p>{% endif %}
+</section>
 {% with att_list=attachments, att_type='component', att_id=c.id %}{% include "partials/attachments.html" %}{% endwith %}
 {% block component_extra %}{% endblock %}
 {% endblock %}

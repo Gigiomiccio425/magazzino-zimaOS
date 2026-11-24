@@ -676,3 +676,9 @@ select.input { cursor: pointer; }
   background: var(--yellow); border: 3px solid var(--black); padding: 10px 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
 .bulk-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; }
 .bulk-check, #bulk-all { width: 22px; height: 22px; accent-color: var(--red); }
+
+.test-result { display: inline-block; padding: 3px 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; border: 2px solid var(--black); }
+.test-result--pass { background: #2e7d32; color: #fff; }
+.test-result--fail { background: var(--red); color: #fff; }
+.test-result--partial { background: var(--yellow); color: var(--black); }
+.test-result--inconclusive { background: var(--paper-2); color: var(--black); }

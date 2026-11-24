@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Nuovo test &middot; {{ c.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Registra test{% endblock %}
+
+{% block content %}
+<p><a class="link" href="/components/{{ c.id }}">&larr; {{ c.name }}</a> <span class="mono muted">{{ c.asset_tag }}</span></p>
+
+<form method="get" action="/components/{{ c.id }}/tests/new" class="filters" data-nosign>
+  <label class="field"><span class="field__label">Modello di test</span>
+    <select name="template" class="input">
+      <option value="">— nessuno (test libero)</option>
+      {% for t in templates %}<option value="{{ t.id }}" {% if tpl and t.id == tpl.id %}selected{% endif %}>{{ t.category }} · {{ t.name }}</option>{% endfor %}
+    </select></label>
+  <button type="submit" class="btn btn--outline">Cambia modello</button>
+</form>
+
+<form method="post" action="/components/{{ c.id }}/tests/new" class="form" id="test-form">
+  {{ csrf_field() }}
+  <input type="hidden" name="template_id" value="{{ tpl.id if tpl else '' }}">
+  {% if tpl %}
+  <section class="panel">
+    <h2 class="panel__title">{{ tpl.name }}</h2>
+    {% if tpl.description %}<p>{{ tpl.description }}</p>{% endif %}
+    <div class="form__grid">
+      {% for f in tpl.fields %}
+      <label class="field">
+        <span class="field__label">{{ f.label }}{% if f.unit %} ({{ f.unit }}){% endif %}</span>
+        {% if f.type == 'bool' %}
+          <select name="v_{{ f.key }}" class="input" data-rule-bool="{{ '1' if f.pass_value else '0' }}">
+            <option value="">—</option><option value="1">Sì</option><option value="0">No</option></select>
+          <span class="field__help">Atteso: {{ 'Sì' if f.pass_value else 'No' }}</span>
+        {% elif f.type == 'number' %}
+          <input type="text" inputmode="decimal" name="v_{{ f.key }}" class="input"
+                 data-rule-min="{{ f.min if f.min is not none else '' }}" data-rule-max="{{ f.max if f.max is not none else '' }}">
+          {% if f.min is not none or f.max is not none %}<span class="field__help">Accettato:{% if f.min is not none %} ≥ {{ f.min }}{% endif %}{% if f.max is not none %} ≤ {{ f.max }}{% endif %}</span>{% endif %}
+        {% else %}
+          <input type="text" name="v_{{ f.key }}" class="input">
+        {% endif %}
+      </label>
+      {% endfor %}
+    </div>
+    {% if tpl.checklist %}
+    <fieldset class="fieldset fieldset--block"><legend class="field__label">Checklist</legend>
+      {% for step in tpl.checklist %}<label class="check"><input type="checkbox" name="c_{{ loop.index0 }}" value="1"> {{ step }}</label>{% endfor %}
+    </fieldset>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <div class="form__grid">
+    <label class="field"><span class="field__label">Strumento usato</span>
+      <input type="text" name="tool" class="input" placeholder="FurMark, MemTest86, tester…"></label>
+  </div>
+  <fieldset class="fieldset fieldset--block">
+    <legend class="field__label">Esito <span class="muted" id="test-suggest" aria-live="polite"></span></legend>
+    {% for code, label in RESULTS.items() %}
+    <label class="check"><input type="radio" name="result" value="{{ code }}" required> {{ label }}</label>
+    {% endfor %}
+  </fieldset>
+  <label class="field"><span class="field__label">Note</span><textarea name="notes" rows="3" class="input"></textarea></label>
+  <label class="field"><span class="field__label">Cambia stato del componente (facoltativo)</span>
+    <select name="set_status" class="input">
+      <option value="">— lascia "{{ STATUSES.get(c.status, c.status) }}"</option>
+      {% for code, label in STATUSES.items() if code != c.status %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+    </select></label>
+  {% with notify_checked=notify_default, notify_label='Pubblica su Discord se il test fallisce' %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+  <div class="form__actions">
+    <button type="submit" class="btn btn--red btn--lg">Registra test</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/test-run.js"></script>{% endblock %}

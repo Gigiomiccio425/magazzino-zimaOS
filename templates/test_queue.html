@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Test &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Verifica e test{% endblock %}
+
+{% block content %}
+<div class="toolbar"><a href="/tests/templates" class="btn btn--outline">Modelli di test</a></div>
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Da testare ({{ items|length }})</h2></div>
+  {% if items %}
+  <ul class="trash-list">
+    {% for c in items %}
+    <li class="trash-item">
+      <a class="link strong" href="/components/{{ c.id }}">{{ c.name }}</a>
+      <span class="mono muted">{{ c.asset_tag }}</span>
+      {% if c.category %}<span class="chip">{{ c.category }}</span>{% endif %}
+      <a class="btn btn--red btn--sm" href="/components/{{ c.id }}/tests/new">Registra test<span class="sr-only"> per {{ c.name }}</span></a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nessun componente in stato "Da testare".</p>{% endif %}
+</section>
+<section class="panel">
+  <h2 class="panel__title">Ultimi test</h2>
+  {% if recent %}
+  <ul class="timeline">
+    {% for r in recent %}
+    <li class="timeline__item">
+      <span class="test-result test-result--{{ r.result }}">{{ RESULTS.get(r.result, r.result) }}</span>
+      <a class="timeline__name" href="/tests/runs/{{ r.id }}">{{ r.component.name }}</a>
+      <span class="timeline__note">{{ r.template.name if r.template else 'Test libero' }}{% if r.tool %} · {{ r.tool }}{% endif %}</span>
+      <time class="timeline__time">{{ r.finished_at|dt }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nessun test registrato.</p>{% endif %}
+</section>
+{% endblock %}

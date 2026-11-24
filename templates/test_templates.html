@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Modelli di test &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Modelli di test{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/tests/templates/new" class="btn btn--red">+ Nuovo modello</a>
+  <a href="/tests/queue" class="btn btn--ghost">&larr; Test</a>
+</div>
+<div class="table-wrap">
+<table class="table">
+  <caption class="sr-only">Modelli di test</caption>
+  <thead><tr><th scope="col">Categoria</th><th scope="col">Nome</th><th scope="col">Campi</th><th scope="col">Stato</th><th scope="col"></th></tr></thead>
+  <tbody>
+  {% for t in templates %}
+    <tr>
+      <td>{{ t.category or '—' }}</td><td class="strong">{{ t.name }}</td>
+      <td>{% for f in t.fields %}{{ f.label }}{{ ', ' if not loop.last }}{% endfor %}</td>
+      <td>{{ 'Attivo' if t.active else 'Spento' }}</td>
+      <td><a class="link" href="/tests/templates/{{ t.id }}/edit">Modifica<span class="sr-only"> {{ t.name }}</span></a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

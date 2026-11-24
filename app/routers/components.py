@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import flash, is_fetch, redirect, render
-from ..models import STATUS_STOCK, STATUSES, TRACKING, Attachment, Category, CategoryField, Component, Machine, Movement, Tag
+from ..models import STATUS_STOCK, STATUSES, TEST_RESULTS, TRACKING, Attachment, Category, CategoryField, Component, Machine, Movement, Tag, TestRun
 from ..services import audit, events
 from ..services.component_form import FormError, apply_component_data, parse_component_form
 from ..services.component_query import build_component_query
@@ -152,6 +152,8 @@ def component_detail(comp_id: int, request: Request, db: Session = Depends(get_d
         "notify_stock": events.default_notify(db, "stock.low"),
         "attachments": db.query(Attachment).filter_by(entity_type="component", entity_id=comp.id, deleted_at=None)
         .order_by(Attachment.id).all(),
+        "test_runs": db.query(TestRun).filter_by(component_id=comp.id).order_by(TestRun.id.desc()).limit(20).all(),
+        "RESULTS": TEST_RESULTS,
     })
 
 

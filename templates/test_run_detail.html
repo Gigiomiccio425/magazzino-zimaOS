@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Test #{{ run.id }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Test #{{ run.id }}{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h2 class="detail-title">{{ run.component.name }}</h2>
+    <div class="detail-meta">
+      <span class="test-result test-result--{{ run.result }}">{{ RESULTS.get(run.result, run.result) }}</span>
+      <span class="mono detail-code">{{ run.component.asset_tag }}</span>
+      <span class="muted">{{ run.finished_at|dt }}{% if run.operator %} · {{ run.operator.name }}{% endif %}</span>
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a href="/components/{{ run.component_id }}" class="btn btn--ghost">&larr; Componente</a>
+    <a href="/components/{{ run.component_id }}/tests/new{% if run.template_id %}?template={{ run.template_id }}{% endif %}" class="btn btn--black">Ripeti test</a>
+  </div>
+</div>
+<section class="panel">
+  <h2 class="panel__title">{{ run.template.name if run.template else 'Test libero' }}</h2>
+  <dl class="specs">
+    {% if run.tool %}<div class="spec"><dt>Strumento</dt><dd>{{ run.tool }}</dd></div>{% endif %}
+    {% for k, v in run.values.items() %}
+      {% set f = fields.get(k) %}
+      <div class="spec"><dt>{{ f.label if f else k }}</dt><dd>{% if v is sameas true %}Sì{% elif v is sameas false %}No{% else %}{{ v }}{% if f and f.unit %} {{ f.unit }}{% endif %}{% endif %}</dd></div>
+    {% endfor %}
+  </dl>
+  {% if run.checklist %}
+  <h3 class="subhead">Checklist</h3>
+  <ul class="plain-list">{% for step, done in run.checklist.items() %}<li>{{ '✔' if done else '✘' }} {{ step }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if run.notes %}<h3 class="subhead">Note</h3><p class="notes">{{ run.notes }}</p>{% endif %}
+</section>
+{% with att_list=attachments, att_type='test_run', att_id=run.id %}{% include "partials/attachments.html" %}{% endwith %}
+{% endblock %}

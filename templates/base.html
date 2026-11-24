@@ -34,6 +34,10 @@
           {{ navlink("/movements", "Movimenti") }}
           {% block nav_magazzino %}{% endblock %}
         </div>
+        <div class="nav__group" role="group" aria-labelledby="nav-g-ver">
+          <span class="nav__group-title" id="nav-g-ver">Verifica</span>
+          {{ navlink("/tests/queue", "Test", "/tests") }}
+        </div>
         {% block nav_extra %}{% endblock %}
         <div class="nav__group" role="group" aria-labelledby="nav-g-sys">
           <span class="nav__group-title" id="nav-g-sys">Sistema</span>
