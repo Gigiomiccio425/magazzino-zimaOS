@@ -51,9 +51,15 @@ h1, h2, h3 {
   flex-shrink: 0;
   background: var(--black);
   color: var(--paper);
-  padding: 28px 22px;
-  position: relative;
-  overflow: hidden;
+  padding: 24px 20px;
+  /* Su PC resta ferma mentre la pagina scorre, con uno scorrimento suo se il menu è lungo */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
 }
@@ -61,22 +67,23 @@ h1, h2, h3 {
 /* Blocco rosso diagonale decorativo (costruttivismo) */
 .sidebar__deco {
   position: absolute;
-  right: -60px;
-  bottom: -60px;
-  width: 180px;
-  height: 180px;
+  right: -70px;
+  bottom: -70px;
+  width: 130px;
+  height: 130px;
   background: var(--red);
   transform: rotate(35deg);
   z-index: 0;
   pointer-events: none;
 }
 
-.brand { position: relative; z-index: 1; margin-bottom: 34px; }
+.sidebar:hover, .sidebar:focus-within { scrollbar-width: thin; scrollbar-color: #444 transparent; }
+.brand { position: relative; z-index: 1; margin-bottom: 24px; }
 .brand__mark {
-  width: 46px; height: 46px;
+  width: 38px; height: 38px;
   background: var(--red);
   transform: rotate(45deg);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   box-shadow: 4px 4px 0 var(--paper);
 }
 .brand__name {
@@ -94,12 +101,12 @@ h1, h2, h3 {
   margin-top: 8px;
 }
 
-.nav { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 4px; }
+.nav { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; }
 .nav__link {
-  padding: 12px 14px;
+  padding: 8px 14px;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   border-left: 4px solid transparent;
   transition: background .12s, border-color .12s, transform .12s;
@@ -343,7 +350,9 @@ h1, h2, h3 {
 
 /* ---------- Filters / toolbar ---------- */
 .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; align-items: stretch; }
-.filters__search { flex: 1 1 240px; }
+.filters__search { flex: 3 1 320px; }
+.filters > .input:not(.filters__search) { width: auto; flex: 1 1 170px; min-width: 0; }
+.filters > .check { align-self: center; }
 .toolbar { margin-bottom: 22px; }
 
 /* ---------- Forms ---------- */
@@ -518,7 +527,7 @@ select.input { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 .main:focus { outline: none; }
 
-.nav__group { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; }
+.nav__group { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
 .nav__group-title {
   font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
   color: #9a938a; font-weight: 800; padding: 0 14px 4px;

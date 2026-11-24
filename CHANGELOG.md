@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.3 — 2026-11
+
+- Dopo un salvataggio la pagina resta dove eri, invece di tornare in cima; i messaggi di conferma
+  compaiono come avviso in basso.
+- Su PC la barra laterale resta ferma e scorre per conto suo: non allunga più la pagina.
+  Menu più compatto.
+- Filtri dei componenti su una riga sola.
+- CSS e JS con l'impronta del contenuto nell'indirizzo: dopo un aggiornamento il browser usa subito
+  la versione nuova.
+
 ## 2.0.2 — 2026-11
 
 - Servizi: nuova pagina "Importa" per creare in un colpo solo i servizi di un server (per esempio

@@ -1,4 +1,7 @@
 """Utility condivise: templates, render con flash, redirect compatibili con fetch."""
+import hashlib
+from pathlib import Path
+
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -34,6 +37,20 @@ def _csrf_token(ctx) -> str:
     return get_csrf_token(ctx["request"])
 
 
+_ASSET_HASHES: dict[str, str] = {}
+
+
+def _asset(path: str) -> str:
+    """URL di un file statico con l'impronta del contenuto: dopo un aggiornamento il browser
+    scarica subito CSS e JS nuovi invece di usare la copia in cache."""
+    if path not in _ASSET_HASHES:
+        try:
+            _ASSET_HASHES[path] = hashlib.sha256((Path("static") / path).read_bytes()).hexdigest()[:10]
+        except OSError:
+            _ASSET_HASHES[path] = APP_VERSION
+    return f"/static/{path}?v={_ASSET_HASHES[path]}"
+
+
 def _nav_current(path: str, match: str) -> bool:
     return path == "/" if match == "/" else path.startswith(match)
 
@@ -41,6 +58,7 @@ def _nav_current(path: str, match: str) -> bool:
 templates.env.globals["csrf_field"] = _csrf_field
 templates.env.globals["csrf_token"] = _csrf_token
 templates.env.globals["nav_current"] = _nav_current
+templates.env.globals["asset"] = _asset
 templates.env.globals["STATUSES"] = STATUSES
 templates.env.globals["APP_VERSION"] = APP_VERSION
 templates.env.globals["current_year"] = utcnow().year

@@ -69,6 +69,29 @@
     return openDialog(title || "Attenzione", msg, "OK", false, false);
   };
 
+  // ---- Posizione di scorrimento ----
+  // Dopo un salvataggio che torna alla stessa pagina, la pagina resta dove eri invece di tornare in cima.
+  var SCROLL_KEY = "mag-scroll";
+  function here() { return window.location.pathname + window.location.search; }
+  MAG.rememberScroll = function () {
+    try { sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ p: here(), y: window.scrollY, t: Date.now() })); } catch (e) {}
+  };
+  document.addEventListener("submit", function (e) {
+    var method = (e.target.getAttribute && e.target.getAttribute("method") || "get").toLowerCase();
+    if (method === "post") MAG.rememberScroll();
+  }, true);
+  (function restoreScroll() {
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || "null"); sessionStorage.removeItem(SCROLL_KEY); } catch (e) {}
+    if (!saved || saved.p !== here() || Date.now() - saved.t > 120000 || saved.y < 40) return;
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, saved.y);
+    // I messaggi stanno in cima alla pagina, fuori vista: si ripetono come avvisi in basso.
+    document.querySelectorAll(".flashes .flash").forEach(function (el) {
+      MAG.toast(el.textContent.trim(), el.classList.contains("flash--error") ? "error" : "success");
+    });
+  })();
+
   // ---- Invio form via fetch (usato da sign.js): segue {"redirect": url} ----
   MAG.submitForm = function (form, extra) {
     var fd = new FormData(form);
@@ -76,7 +99,7 @@
     var method = (form.getAttribute("method") || "post").toUpperCase();
     return MAG.fetchJSON(form.getAttribute("action") || window.location.pathname, { method: method, body: fd })
       .then(function (r) {
-        if (r.data && r.data.redirect) { window.location.assign(r.data.redirect); }
+        if (r.data && r.data.redirect) { MAG.rememberScroll(); window.location.assign(r.data.redirect); }
         return r;
       });
   };

@@ -77,3 +77,16 @@ def test_base_has_pwa_and_bottom_nav(client):
     assert 'rel="manifest"' in html and 'crossorigin="use-credentials"' in html
     assert 'class="bottom-nav"' in html and "data-scan-search" in html and "data-open-palette" in html
     assert "/static/js/theme.js" in html and 'id="theme-toggle"' in html
+
+
+def test_static_assets_have_content_hash(app):
+    """CSS e JS con impronta nell'URL: dopo un aggiornamento il browser non usa la copia vecchia."""
+    import re
+
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as c:
+        html = c.get("/offline").text
+        m = re.search(r'href="/static/css/style\.css\?v=([0-9a-f]{10})"', html)
+        assert m, "style.css senza impronta"
+        assert c.get(f"/static/css/style.css?v={m.group(1)}").status_code == 200
