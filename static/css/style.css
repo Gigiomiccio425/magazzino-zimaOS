@@ -671,3 +671,8 @@ select.input { cursor: pointer; }
 .scanner-manual .input { flex: 1; }
 .scanner-list { max-height: 160px; overflow: auto; margin: 0; padding-left: 22px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
 .scanner-actions { display: flex; justify-content: flex-end; }
+
+.bulk-bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  background: var(--yellow); border: 3px solid var(--black); padding: 10px 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.bulk-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; }
+.bulk-check, #bulk-all { width: 22px; height: 22px; accent-color: var(--red); }

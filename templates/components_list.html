@@ -59,9 +59,43 @@
 
   <button type="submit" class="btn btn--black">Filtra</button>
   <button type="button" class="btn btn--black" data-scan-search>&#128247; Scan</button>
+  <button type="button" class="btn btn--outline" data-scan-batch>&#128247; Scansione a raffica</button>
   <a href="/components" class="btn btn--ghost">Reset</a>
   <a href="/components/new" class="btn btn--red">+ Nuovo</a>
 </form>
+
+<div class="toolbar">
+  <a href="/components/export.csv" class="btn btn--outline btn--sm">Esporta CSV</a>
+  <a href="/components/import" class="btn btn--outline btn--sm">Importa CSV</a>
+</div>
+
+<div class="bulk-bar" id="bulk-bar" hidden role="region" aria-label="Azioni sui selezionati">
+  <strong id="bulk-count" aria-live="polite"></strong>
+  <form method="post" action="/components/bulk" class="bulk-form">
+    {{ csrf_field() }}
+    <label class="sr-only" for="bulk-action">Azione</label>
+    <select name="action" id="bulk-action" class="input input--sm">
+      <option value="move_location">Sposta in posizione</option>
+      <option value="move_machine">Monta su macchina</option>
+      <option value="set_status">Cambia stato</option>
+      <option value="add_tag">Aggiungi tag</option>
+    </select>
+    <span data-bulk-for="move_location"><select name="location_id" class="input input--sm" aria-label="Posizione">
+      <option value="">— nessuna</option>{% for id, path in locations %}<option value="{{ id }}">{{ path }}</option>{% endfor %}</select></span>
+    <span data-bulk-for="move_machine"><select name="machine_id" class="input input--sm" aria-label="Macchina">
+      <option value="">— a magazzino</option>{% for m in machines %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></span>
+    <span data-bulk-for="set_status"><select name="status" class="input input--sm" aria-label="Stato">
+      {% for key, label in STATUSES.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></span>
+    <span data-bulk-for="add_tag"><input type="text" name="tag" class="input input--sm" placeholder="tag" aria-label="Tag"></span>
+    <button type="submit" class="btn btn--black btn--sm">Applica</button>
+  </form>
+  <a href="/labels" id="bulk-labels" class="btn btn--outline btn--sm">Etichette</a>
+  <form method="post" action="/components/bulk/delete" class="bulk-form" data-sign="critical"
+        data-confirm="Spostare nel cestino i componenti selezionati?">
+    {{ csrf_field() }}
+    <button type="submit" class="btn btn--danger btn--sm">Elimina</button>
+  </form>
+</div>
 
 {% if items %}
 <div class="table-wrap">
@@ -69,6 +103,7 @@
   <caption class="sr-only">Componenti trovati</caption>
   <thead>
     <tr>
+      <th scope="col"><input type="checkbox" id="bulk-all" aria-label="Seleziona tutti"></th>
       <th scope="col">Tag</th>
       <th scope="col">Nome</th>
       <th scope="col">Categoria</th>
@@ -82,6 +117,7 @@
   <tbody>
     {% for c in items %}
     <tr>
+      <td><input type="checkbox" class="bulk-check" value="{{ c.id }}" aria-label="Seleziona {{ c.name }}"></td>
       <td class="mono" data-label="Tag">{{ c.asset_tag or '—' }}</td>
       <td class="strong" data-label="Nome"><a href="/components/{{ c.id }}" class="link row-link">{{ c.name }}</a>
         {% for t in c.tags %}<span class="tag-pill">#{{ t.name }}</span>{% endfor %}</td>
@@ -109,3 +145,4 @@
 </div>
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="/static/js/bulk.js"></script>{% endblock %}

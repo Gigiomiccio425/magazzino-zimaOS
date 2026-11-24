@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Importa CSV &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Importa CSV{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 class="panel__title">1. Carica il file</h2>
+  <p>Separatore <strong>;</strong> o <strong>,</strong>, UTF-8. Le righe con <span class="mono">asset_tag</span> (o seriale) esistente aggiornano il componente, le altre ne creano uno nuovo. Parti da un <a class="link" href="/components/export.csv">export</a> per avere le colonne giuste.</p>
+  <form method="post" action="/components/import" enctype="multipart/form-data" class="att-upload" data-nosign>
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">File CSV</span>
+      <input type="file" name="file" accept=".csv,text/csv" required class="input"></label>
+    <button type="submit" class="btn btn--black">Anteprima</button>
+  </form>
+</section>
+
+{% if plan %}
+<section class="panel">
+  <h2 class="panel__title">2. Controlla (nessuna modifica fatta finora)</h2>
+  <p>
+    <span class="tag tag--in_use">{{ plan.count('create') }} nuovi</span>
+    <span class="tag">{{ plan.count('update') }} da aggiornare</span>
+    <span class="tag">{{ plan.count('unchanged') }} invariati</span>
+    <span class="tag tag--faulty">{{ plan.count('error') }} con errori</span>
+  </p>
+  <div class="table-wrap">
+  <table class="table">
+    <caption class="sr-only">Anteprima import</caption>
+    <thead><tr><th scope="col">Riga</th><th scope="col">Esito</th><th scope="col">Corrispondenza</th><th scope="col">Nome</th><th scope="col">Errori</th></tr></thead>
+    <tbody>
+    {% for r in plan.rows %}
+      <tr>
+        <td class="mono">{{ r.line }}</td>
+        <td>{{ {'create': 'Nuovo', 'update': 'Aggiorna', 'unchanged': 'Invariato', 'error': 'Errore'}[r.action] }}</td>
+        <td class="mono">{{ r.match or '—' }}</td>
+        <td>{{ r.data.get('name', '') }}</td>
+        <td>{{ r.errors|join('; ') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="/components/import/apply" class="form__actions">
+    {{ csrf_field() }}
+    <button type="submit" class="btn btn--red btn--lg">Conferma import</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
