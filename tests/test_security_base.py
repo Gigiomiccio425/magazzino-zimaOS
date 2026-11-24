@@ -56,6 +56,15 @@ def test_all_post_forms_have_csrf():
             assert "csrf_field()" in form, f"{tpl}: form POST senza csrf_field()"
 
 
+def test_no_nested_forms():
+    """Un <form> dentro un altro viene scartato dal browser (bug v1.1.1 del tasto Elimina)."""
+    for tpl in Path("templates").rglob("*.html"):
+        depth = 0
+        for tag in re.findall(r"<(/?)form\b", tpl.read_text(encoding="utf-8"), flags=re.I):
+            depth += -1 if tag else 1
+            assert depth <= 1, f"{tpl}: form annidato"
+
+
 def test_no_native_dialogs_in_js():
     for js in Path("static/js").glob("*.js"):
         text = js.read_text(encoding="utf-8")

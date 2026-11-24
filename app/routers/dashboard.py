@@ -19,19 +19,24 @@ router = APIRouter()
 
 @router.get("/")
 def dashboard(request: Request, db: Session = Depends(get_db)):
-    total = db.query(func.count(Component.id)).scalar() or 0
-    in_stock = db.query(func.count(Component.id)).filter(Component.status == STATUS_STOCK).scalar() or 0
-    in_use = db.query(func.count(Component.id)).filter(Component.status == STATUS_IN_USE).scalar() or 0
-    faulty = db.query(func.count(Component.id)).filter(Component.status == STATUS_FAULTY).scalar() or 0
-    machines_count = db.query(func.count(Machine.id)).scalar() or 0
-    # Quantita totale pezzi (somma quantity)
-    total_units = db.query(func.coalesce(func.sum(Component.quantity), 0)).scalar() or 0
+    live = Component.deleted_at.is_(None)
+    count = lambda *f: db.query(func.count(Component.id)).filter(live, *f).scalar() or 0  # noqa: E731
+    total = count()
+    in_stock = count(Component.status == STATUS_STOCK)
+    in_use = count(Component.status == STATUS_IN_USE)
+    faulty = count(Component.status == STATUS_FAULTY)
+    machines_count = db.query(func.count(Machine.id)).filter(Machine.deleted_at.is_(None)).scalar() or 0
+    total_units = db.query(func.coalesce(func.sum(Component.quantity), 0)).filter(live).scalar() or 0
 
-    recent = db.query(Movement).order_by(Movement.timestamp.desc()).limit(8).all()
+    recent = (
+        db.query(Movement).join(Component, Movement.component_id == Component.id).filter(live)
+        .order_by(Movement.timestamp.desc()).limit(8).all()
+    )
 
     # Conteggio per categoria (per barre)
     by_category = (
         db.query(Component.category, func.count(Component.id))
+        .filter(live)
         .group_by(Component.category)
         .order_by(func.count(Component.id).desc())
         .all()

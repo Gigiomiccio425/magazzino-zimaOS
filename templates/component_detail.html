@@ -5,10 +5,11 @@
 {% block content %}
 <div class="detail-head">
   <div>
-    <h1 class="detail-title">{{ component.name }}</h1>
+    <h2 class="detail-title">{{ component.name }}</h2>
     <div class="detail-meta">
       {% if component.category %}<span class="chip">{{ component.category }}</span>{% endif %}
       <span class="status status--{{ component.status }}">{{ STATUSES.get(component.status, component.status) }}</span>
+      {% if component.asset_tag %}<span class="mono detail-code">{{ component.asset_tag }}</span>{% endif %}
       {% if component.serial_number %}<span class="mono detail-code">S/N {{ component.serial_number }}</span>{% endif %}
     </div>
   </div>
@@ -67,6 +68,7 @@
             {{ mv.from_machine or 'Magazzino' }} &rarr; {{ mv.to_machine or 'Magazzino' }}
           {% else %}{{ mv.note }}{% endif %}
         </span>
+        {% if mv.operator %}<span class="muted">{{ mv.operator.name }}</span>{% endif %}
         <time class="timeline__time">{{ mv.timestamp|dt }}</time>
       </li>
       {% endfor %}
