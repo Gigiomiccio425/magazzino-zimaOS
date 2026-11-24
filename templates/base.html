@@ -7,6 +7,10 @@
   <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="icon" href="/static/favicon.svg">
+  <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+  <link rel="apple-touch-icon" href="/static/pwa/icon-192.png">
+  <meta name="theme-color" content="#111111">
+  <script src="/static/js/theme.js"></script>
 </head>
 <body>
   <a href="#main" class="skip-link">Vai al contenuto</a>
@@ -62,6 +66,7 @@
         </div>
       </nav>
       <div class="nav__foot">
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Tema scuro</button>
         <a href="/components/new" class="btn btn--red btn--block">+ Componente</a>
         <a href="/machines/new" class="btn btn--outline-light btn--block">+ Macchina</a>
       </div>
@@ -107,6 +112,7 @@
       </div>
     </form>
   </dialog>
+  {% include "partials/bottom_nav.html" %}
   {% include "partials/sign_dialog.html" %}
   {% include "partials/palette.html" %}
   <div class="toasts" id="toasts" aria-live="assertive" role="alert"></div>

@@ -100,6 +100,13 @@
     if (e.target.closest("[data-print]")) window.print();
   });
 
+  // ---- PWA: service worker (solo in contesto sicuro) ----
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function () { /* opzionale */ });
+    });
+  }
+
   // ---- Sidebar mobile ----
   var burger = document.getElementById("burger");
   var sidebar = document.getElementById("sidebar");
@@ -118,6 +125,9 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && sidebar.classList.contains("is-open")) { setOpen(false); burger.focus(); }
     });
+    document.addEventListener("click", function (e) {
+      if (e.target.closest("[data-open-menu]")) { e.stopPropagation(); setOpen(!sidebar.classList.contains("is-open")); }
+    }, true);
   }
 
   // ---- Auto-dismiss flash ----
