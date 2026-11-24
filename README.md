@@ -1,202 +1,111 @@
-# MAGAZZINO — Inventario Hardware self-hosted
+# GD MAGAZZINO 2.0 — Magazzino hardware e centro di comando self-hosted
 
-App web per tenere traccia di componenti e hardware: dove sono installati (su quale
-macchina), codice oggetto, modello, produttore, seriale, stato, e attributi specifici
-per tipo (es. capacita/velocita per le memorie). Storico spostamenti incluso.
+Inventario di componenti e hardware (schede video, cavi, RAM, dischi…) e centro di comando per
+i servizi del server: changelog, incidenti, manutenzioni, avvisi Discord. Ogni modifica è firmata
+dall'operatore che la fa, con impronta/passkey o password.
 
-Design **costruttivista**: geometrico, asimmetrico, nero / bianco / rosso.
-Stack: **FastAPI + SQLite**, tutto in **un container Docker**. Pensato per **ZimaOS**.
+Design **costruttivista** (nero / carta / rosso). Stack: **FastAPI + SQLite + Jinja2 + JS vanilla**,
+un solo container Docker. Pensato per **Umbrel** e **ZimaOS**.
 
 ---
 
 ## Funzioni
 
-- **Componenti**: codice oggetto, nome, categoria, modello, produttore, seriale,
-  quantita, stato (a magazzino / in uso / guasto / dismesso), posizione, note.
-- **Attributi flessibili** per tipo (RAM -> capacita, tipo, velocita; SSD -> capacita,
-  interfaccia; ecc.) con suggerimenti automatici per categoria.
-- **Macchine / postazioni**: crea le macchine e assegna i componenti. La scheda macchina
-  mostra tutto l'hardware montato.
-- **Movimenti**: ogni spostamento o cambio di stato viene registrato nello storico.
-- **Ricerca e filtri** per testo, categoria, stato, macchina.
-- **Scanner codici (fotocamera)**: leggi seriali e codici a barre / QR con la fotocamera
-  del telefono. Pulsante nei campi Seriale / Codice oggetto e ricerca "Scan" nella lista.
-- **Duplica componente**: clona un componente (copia categoria, modello, attributi...)
-  azzerando seriale e codice, cosi non ricompili tutto.
-- **Login** con password unica.
-- **Dashboard** con statistiche e grafico per categoria.
+**Magazzino**
+- Articoli **a seriale** (una GPU = una scheda) o **a quantità** (cavi, viti) con scorta minima.
+- **Posizioni ad albero** (stanza › scaffale › box) e **QR** su ogni prodotto, posizione e macchina:
+  la fotocamera del telefono apre direttamente la scheda. Etichette stampabili 25×25, 50×25, A4.
+- **Campi per categoria** (VRAM, capacità, lunghezza cavo…) con filtri numerici e a scelta.
+- Foto e allegati (i metadati GPS vengono rimossi), acquisto e garanzia, tag, stati estesi
+  (da testare, testato OK, in RMA, venduto…).
+- Scanner con fotocamera (anche iPhone), **scansione a raffica**, modifica di massa, import/export CSV.
+- **Progetti/build**: prenoti i pezzi, alla fine vengono montati e le scorte scalate.
+- **Cestino**: niente viene cancellato per errore.
 
-> **Scanner e fotocamera — requisito HTTPS.** I browser danno accesso alla fotocamera
-> solo in **contesto sicuro** (HTTPS o `localhost`). Su `http://IP-ZIMA:8086` la
-> fotocamera e' **bloccata dal browser** (non dall'app): il pulsante scan avvisa e puoi
-> inserire il codice a mano. Per usare la fotocamera apri l'app via HTTPS — es. accesso
-> remoto ZimaOS (dominio *.zimaos con TLS) o un reverse proxy con certificato.
-> Funziona su Chrome Android; iOS Safari non supporta ancora `BarcodeDetector`.
+**Verifica**
+- **Registro test** con modelli per categoria (stress GPU, MemTest, SMART, tester alimentatore…).
+- **Inventari fisici**: scansioni una posizione e vedi trovati, mancanti, fuori posto.
+
+**Centro di comando** (tutto inserito a mano)
+- Servizi e moduli (app web, app PC, app Android/iOS, bot, API) con versione.
+- Changelog con link GitHub (commit, PR, issue, release riconosciuti dall'URL).
+- Incidenti SEV1–SEV4 con cronologia e post-mortem, problemi noti, manutenzioni, pagina di stato.
+- **Avvisi Discord**: partono solo quando spunti "Pubblica su Discord". Nessun `@everyone`.
+
+**Sicurezza e tracciabilità**
+- Operatori con nome: alla prima firma registri **impronta/passkey** e/o **password**.
+  L'impronta funziona solo in HTTPS e vale per l'indirizzo dove l'hai registrata.
+- Dopo una firma il dispositivo resta firmato per 10 minuti (regolabile). Eliminazioni,
+  ripristini, impostazioni e webhook chiedono sempre una firma nuova.
+- **Audit log** di ogni modifica con catena di hash e verifica di integrità.
 
 ---
 
-## Installazione
+## Installazione su Umbrel
 
-### Passo 0 — Pubblica su GitHub (una volta sola)
+L'app è nell'app store personale **Gigio-dany-appstore** (`GD Magazzino`). Il login Umbrel è
+obbligatorio davanti all'app: la v2 non ha più una password propria.
 
-1. Crea un repo su GitHub e carica il progetto:
-   ```bash
-   git init
-   git add .
-   git commit -m "Magazzino hardware"
-   git branch -M main
-   git remote add origin https://github.com/OWNER/REPO.git
-   git push -u origin main
-   ```
-2. Il workflow `.github/workflows/docker-publish.yml` builda in automatico e pubblica
-   l'immagine su **GHCR**: `ghcr.io/OWNER/REPO:latest`.
-3. Rendi il package **pubblico** (una volta): GitHub → tab **Packages** → il package
-   `REPO` → **Package settings** → **Change visibility** → **Public**.
-   (Se resta privato serve `docker login ghcr.io` sul dispositivo prima del pull.)
+Dati: `/Apps/g-d-app-store-gd-magazzino/data` (database, allegati, backup).
 
-Sostituisci ovunque `OWNER/REPO` con i tuoi (minuscolo), es. `marcovalerio/magazzino`.
+## Installazione standalone (ZimaOS / Docker)
 
-### Opzione A — Solo il file compose (consigliata) ✅
-
-Install "solo inserendo il file": nessun sorgente da copiare, nessuna build sul dispositivo.
-
-1. Sul ZimaOS crea un file `docker-compose.yml` con questo contenuto (immagine gia su GHCR):
-   ```yaml
-   services:
-     magazzino:
-       image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.1.1
-       container_name: magazzino
-       pull_policy: always
-       ports:
-         - "8086:8000"
-       environment:
-         - APP_PASSWORD=cambiami        # CAMBIALA
-         - APP_NAME=MAGAZZINO
-         - TZ=Europe/Rome
-         - DATA_DIR=/data
-       volumes:
-         # bind mount: l'importer ZimaOS non gestisce i volumi nominati
-         - /DATA/AppData/magazzino:/data
-       restart: unless-stopped
-   ```
-2. Avvia:
-   ```bash
-   docker compose up -d
-   ```
-3. Apri: `http://IP-ZIMA:8086`
-
-Su **ZimaOS App Store → Import** puoi incollare direttamente questo YAML: scarica
-l'immagine e parte, senza build.
-
-### Opzione B — Un file, build da GitHub (senza registry/Actions)
-
-Se non vuoi pubblicare l'immagine, il compose puo buildare direttamente dal repo Git.
-Serve solo questo file, ma la build gira sul dispositivo (piu lenta):
 ```yaml
 services:
   magazzino:
-    build: https://github.com/Gigiomiccio425/magazzino-zimaOS.git#main
-    container_name: magazzino
-    ports:
-      - "8086:8000"
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.0.0
+    ports: ["8086:8000"]
     environment:
-      - APP_PASSWORD=cambiami
+      - TZ=Europe/Rome
+      - DATA_DIR=/data
     volumes:
       - /DATA/AppData/magazzino:/data
     restart: unless-stopped
 ```
-```bash
-docker compose up -d --build
-```
 
-### Opzione C — Sviluppo (repo clonato, build locale)
+> **Attenzione:** senza password propria l'app va tenuta dietro un proxy con autenticazione
+> (login Umbrel, Authelia, Tailscale…). Non esporla direttamente su internet.
 
-```bash
-cp .env.example .env      # cambia APP_PASSWORD
-docker compose -f docker-compose.dev.yml up -d --build
-```
+## Variabili d'ambiente
 
----
+| Variabile         | Default       | Descrizione |
+|-------------------|---------------|-------------|
+| `APP_NAME`        | `MAGAZZINO`   | Nome mostrato nell'interfaccia. |
+| `TZ`              | `Europe/Rome` | Fuso orario. |
+| `DATA_DIR`        | `/data`       | Cartella dati nel container. |
+| `SECRET_KEY`      | *(auto)*      | Firma dei cookie; vuoto = generata e salvata in `data`. |
+| `PUBLIC_BASE_URL` | *(vuoto)*     | URL nei QR e nei link Discord (anche da Impostazioni). |
+| `WEBAUTHN_RP_ID`  | *(vuoto)*     | Dominio fisso per le passkey; vuoto = dominio della richiesta. |
 
-## Configurazione (variabili ambiente)
-
-| Variabile     | Default        | Descrizione                                        |
-|---------------|----------------|----------------------------------------------------|
-| `APP_PASSWORD`| `cambiami`     | Password di accesso. **Cambiala.**                 |
-| `APP_NAME`    | `MAGAZZINO`    | Nome mostrato nell'interfaccia.                    |
-| `SECRET_KEY`  | *(auto)*       | Firma cookie. Vuoto = generata e salvata in `data`.|
-| `TZ`          | `Europe/Rome`  | Fuso orario.                                       |
-| `DATA_DIR`    | `/data`        | Cartella dati nel container.                       |
+`APP_PASSWORD` non è più usata.
 
 ---
 
-## Versioni e aggiornamenti (controllati)
+## Aggiornare dalla 1.1.x
 
-Nessun auto-update. Il compose e' **fissato a una versione** (`:1.0.0`): il container
-resta li' finche' non decidi tu.
+1. (Consigliato) copia la cartella dati.
+2. Aggiorna l'app (Umbrel: aggiorna dall'app store; standalone: cambia il tag in `:2.0.0` e ricrea).
+3. All'avvio l'app fa un backup in `data/backups/pre-migrazione/` e aggiorna il database.
+   Se qualcosa va storto il database resta com'era e l'app non parte.
+4. Alla prima modifica ti chiede il nome: il primo operatore diventa amministratore.
 
-**Immagini pubblicate**
-- `:X.Y.Z` (es. `:1.0.0`) e `:X.Y` — versioni **stabili**, create dai tag `vX.Y.Z`. Usa queste nel compose.
-- `:latest` — ultimo commit su `main` (sviluppo, puo' essere instabile).
-- `:sha-xxxxxxx` — build di un commit preciso (rollback fine).
+## Backup e ripristino
 
-**Rilasciare una nuova versione** (da fare quando vuoi una "versione principale"):
-```bash
-git tag -a v1.1.0 -m "Release v1.1.0"
-git push origin v1.1.0
-```
-GitHub Actions builda e pubblica `:1.1.0` e `:1.1`. La vedi in **Releases** / **Packages**.
+- Automatici: prima di ogni aggiornamento (ultimi 10) e ogni notte alle 03:00 (ultimi 14).
+- **Sistema › Backup**: scarica uno zip completo (database + allegati) o ripristina un backup.
+  Il ripristino salva prima lo stato attuale in `backups/pre-ripristino/`.
 
-**Aggiornare l'installazione** su ZimaOS (solo quando scegli tu):
-1. Cambia il tag nel compose: `...:1.0.0` -> `...:1.1.0`.
-2. Ricrea il container: App Store -> **Recreate**, oppure CLI `docker compose up -d`.
-   I dati restano (bind mount).
-
-**Rollback**: rimetti il tag della versione precedente (o un `:sha-...`) e ricrea.
-
-Per sapere quando c'e' una versione nuova: sul repo GitHub premi **Watch -> Custom ->
-Releases** (ricevi notifica ad ogni release), oppure guarda la pagina Releases.
-
----
-
-## Sviluppo locale (senza Docker)
+## Sviluppo
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate   |   Linux/Mac: source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+uv venv --python 3.12 .venv
+uv pip install -r requirements.txt -r requirements-dev.txt
+.venv/bin/python -m pytest                       # Windows: .venv\Scripts\python
+.venv/bin/python -m uvicorn app.main:create_app --factory --reload
 ```
-App su `http://127.0.0.1:8000` (password default `admin` se non imposti `APP_PASSWORD`).
 
----
+Struttura: `app/` (FastAPI: `routers/`, `services/`, `models/`, `migrations/`), `templates/`,
+`static/` (CSS, JS, scanner offline in `static/vendor/`, PWA), `tests/`.
 
-## Backup / ripristino
-
-Tutto vive in `magazzino.db` (SQLite) + `.secret_key`, dentro la cartella montata su `/data`.
-
-- **ZimaOS (Opzione A/B)**: i file sono in `/DATA/AppData/magazzino/`. Backup = copia quella cartella (anche dal file manager ZimaOS).
-- **Sviluppo (Opzione C)**: cartella `./data/`. Backup = copiala.
-
-Ripristino: rimetti i file al loro posto e riavvia il container.
-
----
-
-## Struttura
-
-```
-magazzino/
-├── app/                 # backend FastAPI
-│   ├── main.py          # app, middleware login, routing, startup
-│   ├── config.py        # variabili ambiente + chiave segreta
-│   ├── database.py      # SQLite + SQLAlchemy
-│   ├── models.py        # Machine, Component, Movement, Category
-│   ├── deps.py          # templates, flash, render
-│   └── routers/         # auth, dashboard, components, machines
-├── templates/           # HTML (Jinja2)
-├── static/              # CSS costruttivista + JS + favicon
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── .env.example
-```
+Rilascio: `git tag -a vX.Y.Z && git push origin vX.Y.Z` → GitHub Actions esegue i test e
+pubblica `ghcr.io/gigiomiccio425/magazzino-zimaos:X.Y.Z`.

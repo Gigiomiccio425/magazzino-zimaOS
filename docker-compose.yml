@@ -1,32 +1,31 @@
 # ============================================================
-# INSTALLAZIONE — App Store grafico ZimaOS (pull immagine da GHCR).
-# Aggiornamenti CONTROLLATI per versione: nessun auto-update.
+# GD MAGAZZINO 2.0 — installazione standalone (ZimaOS / Docker Compose)
+# Su Umbrel si usa l'app store "Gigio-dany-appstore" (login Umbrel incluso).
 #
-# La versione e' FISSATA qui sotto (:1.1.1). Il container resta su questa
-# versione finche' non la cambi TU.
+# Aggiornamenti controllati: la versione e' FISSATA qui sotto (:2.0.0).
+# Prima di ogni aggiornamento l'app fa da sola un backup del database
+# in /data/backups/pre-migrazione/.
 #
-# Per aggiornare a una nuova versione:
-#   1. Guarda le Release del repo: github.com/Gigiomiccio425/magazzino-zimaOS/releases
-#   2. Cambia il numero dopo i due punti (es. :1.1.1 -> :1.2.0)
-#   3. Ricrea il container (App Store: Recreate / CLI: docker compose up -d)
-#
-# Prerequisito: immagine pubblicata su GHCR e package "Public" (una volta sola).
+# ATTENZIONE: la v2 non ha piu' una password propria. Tienila dietro un
+# proxy con autenticazione (es. login Umbrel, Authelia, Tailscale) e non
+# esporla direttamente su internet.
 # ============================================================
 services:
   magazzino:
-    image: ghcr.io/gigiomiccio425/magazzino-zimaos:1.1.1
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.0.0
     container_name: magazzino
     pull_policy: always
     ports:
-      # host:container -> apri http://IP-ZIMA:8086
       - "8086:8000"
     environment:
-      - APP_PASSWORD=${APP_PASSWORD:-cambiami}   # CAMBIALA
       - APP_NAME=${APP_NAME:-MAGAZZINO}
       - SECRET_KEY=${SECRET_KEY:-}
       - TZ=${TZ:-Europe/Rome}
       - DATA_DIR=/data
+      # URL usato nei QR delle etichette e nei link Discord (facoltativo)
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-}
+      # Dominio fisso per le passkey/impronte (facoltativo: di default l'host della richiesta)
+      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}
     volumes:
-      # bind mount su path host ZimaOS (persistenza dati)
       - /DATA/AppData/magazzino:/data
     restart: unless-stopped

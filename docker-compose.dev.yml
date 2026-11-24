@@ -1,4 +1,4 @@
-# Variante SVILUPPO: builda l'immagine dai sorgenti locali (repo clonato).
+# Variante SVILUPPO: builda l'immagine dai sorgenti locali.
 #   docker compose -f docker-compose.dev.yml up -d --build
 services:
   magazzino:
@@ -8,11 +8,12 @@ services:
     ports:
       - "8086:8000"
     environment:
-      - APP_PASSWORD=${APP_PASSWORD:-cambiami}
       - APP_NAME=${APP_NAME:-MAGAZZINO}
       - SECRET_KEY=${SECRET_KEY:-}
       - TZ=${TZ:-Europe/Rome}
       - DATA_DIR=/data
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-}
+      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}
     volumes:
       - ./data:/data
     restart: unless-stopped
