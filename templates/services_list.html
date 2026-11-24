@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Servizi &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Servizi{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/services/new" class="btn btn--red">+ Servizio</a>
+  <a href="/changes" class="btn btn--outline">Changelog</a>
+  <a href="/status" class="btn btn--outline">Pagina di stato</a>
+</div>
+{% if services %}
+<div class="service-grid">
+  {% for s in services %}
+  <a href="/services/{{ s.id }}" class="service-card">
+    <span class="svc-status svc-status--{{ s.status }}">{{ SERVICE_STATUSES.get(s.status, s.status) }}</span>
+    <span class="service-card__name">{{ s.name }}</span>
+    {% if s.machine %}<span class="muted">su {{ s.machine.name }}</span>{% endif %}
+    {% if s.modules %}<span class="service-card__mods">{% for m in s.modules %}{{ MODULE_KINDS.get(m.kind, m.kind) }}{% if m.current_version %} {{ m.current_version }}{% endif %}{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-box"><p>Nessun servizio. Aggiungi le app del server (Immich, Jellyfin, i bot…) per tracciarne versioni, changelog e incidenti.</p></div>
+{% endif %}
+{% endblock %}

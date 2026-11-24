@@ -7,6 +7,7 @@ from markupsafe import Markup
 
 from .core.csrf import get_csrf_token
 from .models import STATUSES
+from .services.markdown import render_markdown
 from .services.signing import session_signer
 from .timeutil import to_local, utcnow
 from .version import APP_VERSION
@@ -44,6 +45,7 @@ templates.env.globals["STATUSES"] = STATUSES
 templates.env.globals["APP_VERSION"] = APP_VERSION
 templates.env.globals["current_year"] = utcnow().year
 templates.env.filters["dt"] = _fmt_dt
+templates.env.filters["md"] = render_markdown
 
 
 def flash(request: Request, message: str, category: str = "success"):

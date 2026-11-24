@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ s.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Servizio{% endblock %}
+
+{% macro link_rows() %}
+  {% for _ in range(3) %}
+  <div class="link-row">
+    <label class="field"><span class="field__label">Link (GitHub o altro)</span>
+      <input type="url" name="link_url" class="input" inputmode="url" placeholder="https://github.com/…/pull/12"></label>
+    <label class="field"><span class="field__label">Titolo</span>
+      <input type="text" name="link_title" maxlength="200" class="input"></label>
+  </div>
+  {% endfor %}
+{% endmacro %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h2 class="detail-title">{{ s.name }}</h2>
+    <div class="detail-meta">
+      <span class="svc-status svc-status--{{ s.status }}">{{ SERVICE_STATUSES.get(s.status, s.status) }}</span>
+      {% if s.machine %}<a class="chip chip--link" href="/machines/{{ s.machine.id }}">{{ s.machine.name }}</a>{% endif %}
+      {% if s.url %}<a class="link" href="{{ s.url }}" target="_blank" rel="noopener noreferrer">{{ s.url }}</a>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a href="/services/{{ s.id }}/edit" class="btn btn--red">Modifica</a>
+    <a href="/incidents/new?service={{ s.id }}" class="btn btn--black">Apri incidente</a>
+    <a href="/services" class="btn btn--ghost">&larr; Servizi</a>
+  </div>
+</div>
+{% if s.description %}<p class="notes notes--wide">{{ s.description }}</p>{% endif %}
+
+<div class="grid-2">
+  <section class="panel">
+    <h2 class="panel__title">Stato</h2>
+    <form method="post" action="/services/{{ s.id }}/status" class="form">
+      {{ csrf_field() }}
+      <label class="field"><span class="field__label">Nuovo stato</span>
+        <select name="status" class="input">{% for code, label in SERVICE_STATUSES.items() %}<option value="{{ code }}" {% if s.status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span class="field__label">Nota</span><input type="text" name="note" maxlength="300" class="input"></label>
+      {% with notify_checked=notify_status %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+      <button type="submit" class="btn btn--black">Aggiorna stato</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Moduli ({{ s.modules|length }})</h2>
+    {% for m in s.modules %}
+    <details class="module">
+      <summary><span class="chip">{{ MODULE_KINDS.get(m.kind, m.kind) }}</span> <strong>{{ m.name }}</strong>
+        {% if m.current_version %}<span class="mono">v{{ m.current_version }}</span>{% endif %}
+        {% if m.repo_url %}<a class="link" href="{{ m.repo_url }}" target="_blank" rel="noopener noreferrer">repo</a>{% endif %}</summary>
+      <form method="post" action="/services/modules/{{ m.id }}/edit" class="form">
+        {{ csrf_field() }}
+        <div class="form__grid">
+          <label class="field"><span class="field__label">Nome</span><input type="text" name="name" value="{{ m.name }}" class="input"></label>
+          <label class="field"><span class="field__label">Tipo</span><select name="kind" class="input">{% for code, label in MODULE_KINDS.items() %}<option value="{{ code }}" {% if m.kind == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+          <label class="field"><span class="field__label">Versione</span><input type="text" name="current_version" value="{{ m.current_version }}" class="input"></label>
+          <label class="field"><span class="field__label">Repository</span><input type="url" name="repo_url" value="{{ m.repo_url }}" class="input"></label>
+        </div>
+        <label class="field"><span class="field__label">Note</span><textarea name="notes" rows="2" class="input">{{ m.notes }}</textarea></label>
+        <button type="submit" class="btn btn--black btn--sm">Salva modulo</button>
+      </form>
+    </details>
+    {% endfor %}
+    <details class="module">
+      <summary><strong>+ Nuovo modulo</strong> (app PC, app telefono, bot, API…)</summary>
+      <form method="post" action="/services/{{ s.id }}/modules" class="form">
+        {{ csrf_field() }}
+        <div class="form__grid">
+          <label class="field"><span class="field__label">Nome</span><input type="text" name="name" required class="input"></label>
+          <label class="field"><span class="field__label">Tipo</span><select name="kind" class="input">{% for code, label in MODULE_KINDS.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></label>
+          <label class="field"><span class="field__label">Versione attuale</span><input type="text" name="current_version" class="input"></label>
+          <label class="field"><span class="field__label">Repository</span><input type="url" name="repo_url" class="input" placeholder="https://github.com/…"></label>
+        </div>
+        <button type="submit" class="btn btn--black btn--sm">Aggiungi modulo</button>
+      </form>
+    </details>
+  </section>
+</div>
+
+{% if s.runbook_md %}
+<section class="panel"><h2 class="panel__title">Runbook</h2><div class="prose">{{ s.runbook_md|md }}</div></section>
+{% endif %}
+
+<section class="panel">
+  <h2 class="panel__title">Nuova voce di changelog</h2>
+  <form method="post" action="/services/{{ s.id }}/changes" class="form">
+    {{ csrf_field() }}
+    <div class="form__grid">
+      <label class="field"><span class="field__label">Tipo</span>
+        <select name="type" class="input">{% for code, label in CHANGE_TYPES.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span class="field__label">Modulo</span>
+        <select name="module_id" class="input"><option value="">— intero servizio</option>{% for m in s.modules %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></label>
+      <label class="field"><span class="field__label">Versione</span><input type="text" name="version" maxlength="60" class="input"></label>
+      <label class="field"><span class="field__label">Quando</span><input type="datetime-local" name="occurred_at" class="input"></label>
+    </div>
+    <label class="field"><span class="field__label">Titolo *</span><input type="text" name="title" required maxlength="200" class="input"></label>
+    <label class="field"><span class="field__label">Dettagli (markdown)</span><textarea name="body_md" rows="4" class="input"></textarea></label>
+    {{ link_rows() }}
+    <label class="check"><input type="checkbox" name="update_version" value="1"> Aggiorna la versione del modulo a quella indicata</label>
+    {% with notify_checked=notify_change %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+    <button type="submit" class="btn btn--red">Registra</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Changelog</h2>
+  {% if changes %}
+  <ol class="changelog">
+    {% for ch in changes %}
+    <li class="changelog__item">
+      <div class="changelog__head">
+        <span class="chip">{{ CHANGE_TYPES.get(ch.type, ch.type) }}</span>
+        <strong>{{ ch.title }}</strong>
+        {% if ch.version %}<span class="mono">v{{ ch.version }}</span>{% endif %}
+        {% if ch.module %}<span class="muted">{{ ch.module.name }}</span>{% endif %}
+        <time class="muted">{{ ch.occurred_at|dt }}{% if ch.operator %} · {{ ch.operator.name }}{% endif %}</time>
+      </div>
+      {% if ch.body_md %}<div class="prose">{{ ch.body_md|md }}</div>{% endif %}
+      {% with link_list=links.get(ch.id) %}{% include "partials/links.html" %}{% endwith %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}<p class="empty">Nessuna voce.</p>{% endif %}
+</section>
+
+{% if incidents %}
+<section class="panel">
+  <h2 class="panel__title">Incidenti</h2>
+  <ul class="timeline">{% for i in incidents %}
+    <li class="timeline__item"><span class="sev sev--{{ i.severity }}">{{ i.severity }}</span>
+      <a class="timeline__name" href="/incidents/{{ i.id }}">{{ i.title }}</a>
+      <span class="timeline__note">{{ INCIDENT_STATUSES.get(i.status, i.status) }}</span>
+      <time class="timeline__time">{{ i.started_at|dt }}</time></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% with att_list=attachments, att_type='service', att_id=s.id %}{% include "partials/attachments.html" %}{% endwith %}
+{% endblock %}

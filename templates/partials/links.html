@@ -1,0 +1,10 @@
+{# Uso: {% with link_list=... %}{% include "partials/links.html" %}{% endwith %} #}
+{% if link_list %}
+<ul class="link-list">
+  {% for l in link_list %}
+  <li><a href="{{ l.url }}" target="_blank" rel="noopener noreferrer" class="link-chip link-chip--{{ l.kind }}">
+    <span class="link-chip__kind">{{ KIND_LABELS.get(l.kind, 'Link') }}{% if l.ref and l.kind in ('github_pr', 'github_issue') %} #{{ l.ref }}{% elif l.ref %} {{ l.ref[:10] }}{% endif %}</span>
+    <span>{{ l.title or (l.owner ~ '/' ~ l.repo if l.repo else l.url) }}</span></a></li>
+  {% endfor %}
+</ul>
+{% endif %}

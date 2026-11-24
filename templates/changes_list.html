@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Changelog &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Changelog{% endblock %}
+
+{% block content %}
+<form method="get" action="/changes" class="filters" role="search" data-nosign>
+  <label class="sr-only" for="ch-s">Servizio</label>
+  <select id="ch-s" name="service" class="input"><option value="">Tutti i servizi</option>
+    {% for s in services %}<option value="{{ s.id }}" {% if filters.service == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+  <label class="sr-only" for="ch-t">Tipo</label>
+  <select id="ch-t" name="type" class="input"><option value="">Ogni tipo</option>
+    {% for code, label in CHANGE_TYPES.items() %}<option value="{{ code }}" {% if filters.type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <button type="submit" class="btn btn--black">Filtra</button>
+</form>
+{% if changes %}
+<ol class="changelog">
+  {% for ch in changes %}
+  <li class="changelog__item">
+    <div class="changelog__head">
+      <span class="chip">{{ CHANGE_TYPES.get(ch.type, ch.type) }}</span>
+      <a class="link strong" href="/services/{{ ch.service_id }}">{{ ch.service.name }}</a>
+      <strong>{{ ch.title }}</strong>
+      {% if ch.version %}<span class="mono">v{{ ch.version }}</span>{% endif %}
+      {% if ch.module %}<span class="muted">{{ ch.module.name }}</span>{% endif %}
+      <time class="muted">{{ ch.occurred_at|dt }}{% if ch.operator %} · {{ ch.operator.name }}{% endif %}</time>
+    </div>
+    {% if ch.body_md %}<div class="prose">{{ ch.body_md|md }}</div>{% endif %}
+    {% with link_list=links.get(ch.id) %}{% include "partials/links.html" %}{% endwith %}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}<div class="empty-box"><p>Nessuna voce di changelog.</p></div>{% endif %}
+{% endblock %}

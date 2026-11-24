@@ -40,6 +40,11 @@
           {{ navlink("/tests/queue", "Test", "/tests") }}
           {{ navlink("/audits", "Inventari") }}
         </div>
+        <div class="nav__group" role="group" aria-labelledby="nav-g-cmd">
+          <span class="nav__group-title" id="nav-g-cmd">Centro comando</span>
+          {{ navlink("/services", "Servizi") }}
+          {{ navlink("/changes", "Changelog") }}
+        </div>
         {% block nav_extra %}{% endblock %}
         <div class="nav__group" role="group" aria-labelledby="nav-g-sys">
           <span class="nav__group-title" id="nav-g-sys">Sistema</span>

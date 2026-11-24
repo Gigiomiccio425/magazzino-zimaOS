@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set editing = s is not none %}
+{% block title %}{{ 'Modifica' if editing else 'Nuovo' }} servizio &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifica servizio' if editing else 'Nuovo servizio' }}{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ '/services/' ~ s.id ~ '/edit' if editing else '/services/new' }}" class="form">
+  {{ csrf_field() }}
+  <div class="form__grid">
+    <label class="field"><span class="field__label">Nome *</span>
+      <input type="text" name="name" required maxlength="160" class="input" value="{{ s.name if editing else '' }}"></label>
+    <label class="field"><span class="field__label">Server / macchina</span>
+      <select name="machine_id" class="input"><option value="">—</option>
+        {% for m in machines %}<option value="{{ m.id }}" {% if editing and s.machine_id == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select></label>
+    <label class="field"><span class="field__label">Indirizzo</span>
+      <input type="url" name="url" class="input" inputmode="url" placeholder="https://…" value="{{ s.url if editing else '' }}"></label>
+    <label class="field"><span class="field__label">Stato</span>
+      <select name="status" class="input">
+        {% for code, label in SERVICE_STATUSES.items() %}<option value="{{ code }}" {% if (s.status if editing else 'operational') == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></label>
+  </div>
+  <label class="field"><span class="field__label">Descrizione</span>
+    <textarea name="description" rows="2" class="input">{{ s.description if editing else '' }}</textarea></label>
+  <label class="field"><span class="field__label">Runbook (markdown: come riavviare, porte, dipendenze, log)</span>
+    <textarea name="runbook_md" rows="8" class="input mono" aria-describedby="help-runbook">{{ s.runbook_md if editing else '' }}</textarea>
+    <span class="field__help warn" id="help-runbook">Non inserire password o token: il runbook è leggibile da tutti gli operatori.</span></label>
+  {% if editing %}{% with notify_checked=false, notify_label='Pubblica su Discord il cambio di stato' %}{% include "partials/notify_checkbox.html" %}{% endwith %}{% endif %}
+  <div class="form__actions">
+    <button type="submit" class="btn btn--red btn--lg">Salva</button>
+    <a href="{{ '/services/' ~ s.id if editing else '/services' }}" class="btn btn--ghost btn--lg">Annulla</a>
+    {% if editing %}<button type="submit" form="delete-form" class="btn btn--danger btn--lg">Elimina</button>{% endif %}
+  </div>
+</form>
+{% if editing %}
+<form method="post" action="/services/{{ s.id }}/delete" id="delete-form" hidden data-sign="critical"
+      data-confirm="Spostare il servizio nel cestino?">{{ csrf_field() }}</form>
+{% endif %}
+{% endblock %}
