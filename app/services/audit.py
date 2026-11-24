@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..models import AuditLog
@@ -69,6 +70,10 @@ def record(
     actor_type: str = "operator",
 ) -> AuditLog:
     """Aggiunge una riga (flush, senza commit: il chiamante committa con la sua transazione)."""
+    db.flush()
+    # Scrittura fittizia: apre la transazione di scrittura (lock SQLite) PRIMA di leggere l'ultimo hash,
+    # cosi' due salvataggi contemporanei non possono partire dallo stesso prev_hash.
+    db.execute(text("UPDATE audit_log SET id = id WHERE 0"))
     last = db.query(AuditLog.hash).order_by(AuditLog.id.desc()).first()
     prev_hash = last[0] if last else GENESIS
     row = AuditLog(

@@ -1,9 +1,11 @@
 """Cestino: elementi eliminati (soft delete), ripristino o eliminazione definitiva (critica)."""
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import flash, redirect, render
+from ..deps import flash, is_fetch, redirect, render
 from ..models import Component, Location, Machine, Service
 from ..services.inventory import purge, restore
 from ..services.signing import SignerInfo, require_signer
@@ -58,7 +60,17 @@ def trash_purge(kind: str, obj_id: int, request: Request, db: Session = Depends(
         flash(request, "Elemento non trovato nel cestino.", "error")
         return redirect(request, "/trash")
     name = obj.name
-    purge(db, obj, signer)
+    try:
+        purge(db, obj, signer)
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        message = (f"\"{name}\" è collegato ad altri dati (test, progetti, inventari, servizi…): "
+                   "resta nel cestino, non può essere eliminato per sempre.")
+        if is_fetch(request):
+            return JSONResponse({"error": "has_dependents", "message": message}, status_code=409)
+        flash(request, message, "error")
+        return redirect(request, "/trash")
     db.commit()
     flash(request, f"\"{name}\" eliminato definitivamente.")
     return redirect(request, "/trash")

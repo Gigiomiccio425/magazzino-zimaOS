@@ -150,7 +150,7 @@ async def webhook_test(hook_id: int, request: Request, db: Session = Depends(get
     item = OutboxItem(webhook_id=hook.id, event="webhook.test",
                       payload=events.payload_for(hook, "webhook.test", data, base_url(request, db), app_name))
     db.add(item)
-    db.flush()
+    db.commit()  # nessun lock di scrittura tenuto durante la chiamata HTTP
     await outbox.deliver_one(db, item, request.app.state.http, utcnow())
     db.commit()
     if item.status == "sent":

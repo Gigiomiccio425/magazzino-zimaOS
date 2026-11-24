@@ -90,6 +90,7 @@
         {% elif f.type == 'choice' %}
           <select name="cf_{{ f.id }}" class="input" disabled>
             <option value="">—</option>
+            {% if current and current not in f.choices %}<option value="{{ current }}" selected>{{ current }} (valore storico)</option>{% endif %}
             {% for ch in f.choices %}<option value="{{ ch }}" {% if current == ch %}selected{% endif %}>{{ ch }}</option>{% endfor %}
           </select>
         {% elif f.type == 'bool' %}

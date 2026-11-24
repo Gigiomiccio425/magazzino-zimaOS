@@ -156,15 +156,19 @@ def restore_backup(app, source: Path) -> RestoreReport:
         stamp = _stamp()
         pre = snapshot_db(settings.db_path, settings.backups_dir / PRE_RESTORE_DIR / f"{stamp}.db")
         app.state.engine.dispose()
+        old_uploads = settings.backups_dir / PRE_RESTORE_DIR / f"uploads-{stamp}"
         try:
             snapshot_db(db_src, settings.db_path)
             if uploads_src is not None:
                 if settings.uploads_dir.exists():
-                    shutil.move(str(settings.uploads_dir), settings.backups_dir / PRE_RESTORE_DIR / f"uploads-{stamp}")
+                    shutil.move(str(settings.uploads_dir), old_uploads)
                 shutil.copytree(uploads_src, settings.uploads_dir)
             report = run_migrations(settings.db_path, settings.backups_dir)
         except Exception as exc:
-            snapshot_db(pre, settings.db_path)  # rimette lo stato precedente
+            snapshot_db(pre, settings.db_path)  # rimette il database precedente
+            if old_uploads.exists():  # e gli allegati precedenti
+                shutil.rmtree(settings.uploads_dir, ignore_errors=True)
+                shutil.move(str(old_uploads), settings.uploads_dir)
             raise BackupError(f"Ripristino non riuscito, dati precedenti rimessi: {exc}") from exc
         finally:
             app.state.engine = make_engine(settings.db_path)

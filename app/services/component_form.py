@@ -86,7 +86,11 @@ class ComponentData:
     tags: list[str] = field(default_factory=list)
 
 
-def typed_value(f: CategoryField, raw):
+def typed_value(f: CategoryField, raw, legacy=None):
+    """Valore tipizzato. Un valore storico v1.1.1 (testo libero, fuori dalle scelte o non numerico)
+    reinviato identico viene conservato cosi' com'e'."""
+    if legacy is not None and isinstance(legacy, str) and (raw or "").strip() == legacy.strip():
+        return legacy
     if f.type == "number":
         return parse_number(raw)
     if f.type == "bool":
@@ -100,7 +104,7 @@ def typed_value(f: CategoryField, raw):
     return value or None
 
 
-def parse_component_form(form, fields: list[CategoryField]) -> ComponentData:
+def parse_component_form(form, fields: list[CategoryField], current: dict | None = None) -> ComponentData:
     def s(name):
         return (form.get(name) or "").strip()
 
@@ -118,7 +122,7 @@ def parse_component_form(form, fields: list[CategoryField]) -> ComponentData:
         if k:
             attrs[k] = v
     for f in fields:
-        value = typed_value(f, form.get(f"cf_{f.id}"))
+        value = typed_value(f, form.get(f"cf_{f.id}"), (current or {}).get(f.key))
         if value is None:
             attrs.pop(f.key, None)
         else:

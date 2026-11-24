@@ -84,9 +84,10 @@ def _set_tags(db: Session, comp: Component, names: list[str]) -> None:
     comp.tags = tags
 
 
-async def _read_form(request: Request, db: Session):
+async def _read_form(request: Request, db: Session, comp: Component | None = None):
     form = await request.form()
-    data = parse_component_form(form, _fields_for(db, (form.get("category") or "").strip()))
+    data = parse_component_form(form, _fields_for(db, (form.get("category") or "").strip()),
+                                comp.attributes if comp else None)
     data.machine_id, data.status = normalize_assignment(data.machine_id, data.status)
     return data
 
@@ -173,7 +174,7 @@ async def update_component(comp_id: int, request: Request, db: Session = Depends
     if not comp:
         return _refuse(request, 404, "Componente non trovato.", "/components")
     try:
-        data = await _read_form(request, db)
+        data = await _read_form(request, db, comp)
     except FormError as exc:
         return _refuse(request, 422, str(exc), f"/components/{comp_id}/edit")
     before = audit.snapshot(comp, COMPONENT_FIELDS)

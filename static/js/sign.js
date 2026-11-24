@@ -53,7 +53,9 @@
     var hint = "";
     if (!canPasskey && !op.has_password) {
       hint = "Nessuna impronta registrata per questo indirizzo e nessuna password: chiedi a un amministratore di impostarne una.";
-    } else if (!canPasskey && op.passkey_here === false && passkeyAvailable()) {
+    } else if (!canPasskey && !passkeyAvailable()) {
+      hint = "Su questo indirizzo l'impronta non è disponibile (serve HTTPS): usa la password.";
+    } else if (!canPasskey && op.passkey_here === false) {
       hint = "Nessuna impronta registrata per questo indirizzo: usa la password.";
     }
     $("sign-hint").textContent = hint;

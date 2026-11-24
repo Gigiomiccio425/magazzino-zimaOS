@@ -37,7 +37,8 @@ async def _signature_required(request: Request, exc: SignatureRequired):
         return JSONResponse({"error": "signature_required", "critical": exc.critical}, status_code=428)
     flash(request, "Firma richiesta: abilita JavaScript e riprova.", "error")
     referer = urlparse(request.headers.get("referer", ""))
-    back = referer.path if referer.path and referer.netloc in ("", request.url.netloc) else "/"
+    local = referer.path.startswith("/") and not referer.path.startswith("//")
+    back = referer.path if local and referer.netloc in ("", request.url.netloc) else "/"
     if referer.query:
         back += "?" + referer.query
     return RedirectResponse(url=back, status_code=303)
