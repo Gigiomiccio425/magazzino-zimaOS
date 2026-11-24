@@ -57,7 +57,7 @@
 
   async function scan(onResult) {
     var info = supportInfo();
-    if (!info.ok) { alert(info.msg); return; }
+    if (!info.ok) { window.MAG.info(info.msg, "Scanner"); return; }
 
     buildOverlay();
     try {

@@ -15,6 +15,7 @@
   <div class="detail-actions">
     <a href="/components/{{ component.id }}/edit" class="btn btn--red">Modifica</a>
     <form method="post" action="/components/{{ component.id }}/duplicate" class="detail-dup">
+  {{ csrf_field() }}
       <button type="submit" class="btn btn--black">Duplica</button>
     </form>
     <a href="/components" class="btn btn--ghost">&larr; Lista</a>

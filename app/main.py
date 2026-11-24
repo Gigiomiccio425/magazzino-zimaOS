@@ -3,16 +3,28 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from .config import load_settings
+from .core.csrf import CSRFError, verify_csrf
+from .core.headers import SecurityHeadersMiddleware
 from .database import make_engine
+from .deps import is_fetch
 from .migrations.runner import run_migrations
 from .routers import auth, components, dashboard, machines
 
 log = logging.getLogger("magazzino")
+
+ROUTERS = [auth, dashboard, components, machines]
+
+
+async def _csrf_error(request: Request, _exc: CSRFError):
+    if is_fetch(request):
+        return JSONResponse({"error": "csrf"}, status_code=403)
+    return PlainTextResponse("Richiesta non valida (token CSRF). Ricarica la pagina e riprova.", status_code=403)
 
 
 def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True) -> FastAPI:
@@ -28,10 +40,18 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
         try:
             yield
         finally:
-            engine.dispose()
+            app.state.engine.dispose()
 
-    app = FastAPI(title="Magazzino Hardware", docs_url=None, redoc_url=None, lifespan=lifespan)
+    app = FastAPI(
+        title="Magazzino Hardware",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        lifespan=lifespan,
+        exception_handlers={CSRFError: _csrf_error},
+    )
     app.state.settings = settings
+    app.state.start_worker = start_worker
     app.mount("/static", StaticFiles(directory="static"), name="static")
     app.add_middleware(
         SessionMiddleware,
@@ -39,13 +59,12 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
         max_age=60 * 60 * 24 * 30,
         same_site="lax",
     )
+    app.add_middleware(SecurityHeadersMiddleware)
 
     @app.get("/health")
     def health():
         return {"status": "ok"}
 
-    app.include_router(auth.router)
-    app.include_router(dashboard.router)
-    app.include_router(components.router)
-    app.include_router(machines.router)
+    for module in ROUTERS:
+        app.include_router(module.router, dependencies=[Depends(verify_csrf)])
     return app

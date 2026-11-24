@@ -2,7 +2,10 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from jinja2 import pass_context
+from markupsafe import Markup
 
+from .core.csrf import get_csrf_token
 from .models import STATUSES
 from .timeutil import to_local, utcnow
 from .version import APP_VERSION
@@ -18,6 +21,24 @@ def _fmt_dt(value):
     return to_local(value).strftime("%d/%m/%Y %H:%M")
 
 
+@pass_context
+def _csrf_field(ctx) -> Markup:
+    token = get_csrf_token(ctx["request"])
+    return Markup(f'<input type="hidden" name="csrf_token" value="{token}">')
+
+
+@pass_context
+def _csrf_token(ctx) -> str:
+    return get_csrf_token(ctx["request"])
+
+
+def _nav_current(path: str, match: str) -> bool:
+    return path == "/" if match == "/" else path.startswith(match)
+
+
+templates.env.globals["csrf_field"] = _csrf_field
+templates.env.globals["csrf_token"] = _csrf_token
+templates.env.globals["nav_current"] = _nav_current
 templates.env.globals["STATUSES"] = STATUSES
 templates.env.globals["APP_VERSION"] = APP_VERSION
 templates.env.globals["current_year"] = utcnow().year
