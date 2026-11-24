@@ -728,3 +728,16 @@ select.input { cursor: pointer; }
 .status-list { list-style: none; padding: 0; margin: 0; }
 .status-list li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 2px solid var(--paper-2); }
 .is-late { border-left-color: var(--red); }
+
+/* ---- Palette Ctrl+K ---- */
+.palette { width: min(640px, calc(100vw - 16px)); margin-top: 10vh; }
+.palette__box { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.palette__input { font-size: 18px; }
+.palette__list { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow: auto; }
+.palette__group { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; padding: 10px 8px 4px; color: #5b554c; }
+.palette__item { display: flex; flex-direction: column; padding: 8px 10px; cursor: pointer; border-left: 4px solid transparent; min-height: 44px; justify-content: center; }
+.palette__item[aria-selected="true"], .palette__item:hover { background: var(--black); color: var(--paper); border-left-color: var(--red); }
+.palette__item[aria-selected="true"] .muted { color: #cfc8bd; }
+.palette__hint { margin: 0; font-size: 12px; }
+.topbar__search { flex-shrink: 0; }
+.topbar__search kbd { font-family: ui-monospace, Consolas, monospace; font-size: 11px; border: 1px solid currentColor; padding: 0 4px; margin-left: 6px; }

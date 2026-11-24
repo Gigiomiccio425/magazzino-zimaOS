@@ -74,6 +74,7 @@
                 aria-controls="sidebar" aria-expanded="false">&#9776;</button>
         <h1 class="topbar__title">{% block heading %}{% endblock %}</h1>
         <div class="topbar__bar" aria-hidden="true"></div>
+        <a href="/search" class="btn btn--outline btn--sm topbar__search" data-open-palette aria-keyshortcuts="Control+K">Cerca <kbd>Ctrl K</kbd></a>
         {% if signer %}
         <div class="signer-badge" role="status">
           <span>Firmato: <strong>{{ signer.name }}</strong></span>
@@ -107,6 +108,7 @@
     </form>
   </dialog>
   {% include "partials/sign_dialog.html" %}
+  {% include "partials/palette.html" %}
   <div class="toasts" id="toasts" aria-live="assertive" role="alert"></div>
 
   <script src="/static/js/app.js"></script>
@@ -114,6 +116,7 @@
   <script src="/static/js/sign.js"></script>
   <script src="/static/vendor/barcode-detector/ponyfill.min.js" defer></script>
   <script src="/static/js/scanner.js"></script>
+  <script src="/static/js/palette.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

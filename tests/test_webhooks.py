@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import httpx
 import pytest
@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.models import Operator, OutboxItem, Webhook
 from app.services import discord, events, outbox
+from app.timeutil import utcnow
 from tests.helpers import FETCH, critical_post, get_csrf, sign_new
 
 URL = "https://discord.com/api/webhooks/123456/abcDEF-_x"
@@ -121,7 +122,7 @@ def test_deliver_success(app, db):
 
 def test_deliver_429_retry_after(app, db):
     item = _queued(db)
-    now = datetime(2026, 11, 24, 12, 0)
+    now = utcnow() + timedelta(minutes=1)  # sempre dopo la creazione in coda
     _run(app.state.engine, lambda req: httpx.Response(429, json={"retry_after": 2.5}), now=now)
     db.refresh(item)
     assert item.status == "pending" and item.attempts == 0
@@ -137,7 +138,7 @@ def test_deliver_4xx_dead(app, db):
 
 def test_deliver_5xx_backoff_then_dead(app, db):
     item = _queued(db)
-    now = datetime(2026, 11, 24, 12, 0)
+    now = utcnow() + timedelta(minutes=1)  # sempre dopo la creazione in coda
     for i, delay in enumerate(outbox.BACKOFF_SECONDS):
         _run(app.state.engine, lambda req: httpx.Response(502), now=now)
         db.refresh(item)

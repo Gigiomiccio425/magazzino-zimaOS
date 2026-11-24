@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Cerca &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Cerca{% endblock %}
+
+{% block content %}
+<form method="get" action="/search" class="filters" role="search" data-nosign>
+  <label class="sr-only" for="s-q">Cerca ovunque</label>
+  <input type="search" id="s-q" name="q" value="{{ q }}" class="input filters__search" placeholder="Componenti, posizioni, servizi, incidenti…" autofocus>
+  <button type="submit" class="btn btn--black">Cerca</button>
+</form>
+{% for g in groups %}
+<section class="panel">
+  <h2 class="panel__title">{{ g.label }}</h2>
+  <ul class="trash-list">{% for h in g.items %}
+    <li class="trash-item"><a class="link strong" href="{{ h.url }}">{{ h.title }}</a><span class="muted">{{ h.subtitle }}</span></li>{% endfor %}</ul>
+</section>
+{% else %}
+{% if q|length >= 2 %}<div class="empty-box"><p>Nessun risultato per "{{ q }}".</p></div>{% endif %}
+{% endfor %}
+{% endblock %}
