@@ -15,6 +15,7 @@
   <div class="detail-actions">
     <a href="/locations/{{ loc.id }}/edit" class="btn btn--red">Modifica</a>
     <a href="/locations/new?parent={{ loc.id }}" class="btn btn--black">+ Sottoposizione</a>
+    <a href="/labels?locations={{ loc.id }}" class="btn btn--outline">Etichetta QR</a>
     {% block location_actions %}{% endblock %}
     <a href="/locations" class="btn btn--ghost">&larr; Posizioni</a>
   </div>

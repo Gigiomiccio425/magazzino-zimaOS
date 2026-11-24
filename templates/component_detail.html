@@ -21,6 +21,7 @@
       {{ csrf_field() }}
       <button type="submit" class="btn btn--black">Duplica</button>
     </form>
+    <a href="/labels?components={{ c.id }}" class="btn btn--outline">Etichetta QR</a>
     {% block component_actions %}{% endblock %}
     <a href="/components" class="btn btn--ghost">&larr; Lista</a>
   </div>

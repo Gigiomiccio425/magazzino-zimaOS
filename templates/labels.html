@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Etichette &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Etichette QR{% endblock %}
+
+{% block content %}
+<div class="toolbar no-print">
+  {% for code, label in FORMATS.items() %}
+  <a class="btn {{ 'btn--black' if code == fmt else 'btn--outline' }}" aria-current="{{ 'true' if code == fmt else 'false' }}"
+     href="/labels?{{ query|replace('format=' ~ fmt, '') }}&format={{ code }}">{{ label }}</a>
+  {% endfor %}
+  <button type="button" class="btn btn--red" data-print>Stampa</button>
+</div>
+<p class="no-print lead">{{ entries|length }} etichette. Ogni QR apre la scheda anche dalla fotocamera del telefono.</p>
+
+{% if entries %}
+<div class="labels labels--{{ fmt }}">
+  {% for e in entries %}
+  <div class="label">
+    <div class="label__qr">{{ e.svg|safe }}</div>
+    <div class="label__text">
+      <span class="label__tag">{{ e.tag }}</span>
+      {% if fmt != 'small' %}<span class="label__title">{{ e.title }}</span>
+      {% if e.sub %}<span class="label__sub">{{ e.sub }}</span>{% endif %}{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-box"><p>Nessun elemento selezionato.</p></div>
+{% endif %}
+{% endblock %}

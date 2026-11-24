@@ -95,6 +95,11 @@
     });
   }, true);
 
+  // ---- Stampa (etichette) ----
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-print]")) window.print();
+  });
+
   // ---- Sidebar mobile ----
   var burger = document.getElementById("burger");
   var sidebar = document.getElementById("sidebar");
