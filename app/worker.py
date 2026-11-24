@@ -4,7 +4,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from .services import backup
+from .services import backup, outbox
 from .timeutil import local_zone
 
 log = logging.getLogger("magazzino.worker")
@@ -13,7 +13,17 @@ log = logging.getLogger("magazzino.worker")
 class Worker:
     def __init__(self, app):
         self.app = app
-        self.jobs: list[tuple[float, Callable[[], Awaitable[None]]]] = [(60.0, self.backup_job)]
+        self.jobs: list[tuple[float, Callable[[], Awaitable[None]]]] = [
+            (60.0, self.backup_job),
+            (5.0, self.outbox_job),
+            (86400.0, self.purge_job),
+        ]
+
+    async def outbox_job(self) -> None:
+        await outbox.deliver_due(self.app.state.engine, self.app.state.http)
+
+    async def purge_job(self) -> None:
+        await asyncio.to_thread(outbox.purge_old, self.app.state.engine)
 
     async def backup_job(self) -> None:
         now_local = datetime.now(local_zone()).replace(tzinfo=None)

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Registro invii &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Registro invii{% endblock %}
+
+{% block content %}
+<p><a href="/webhooks" class="link">&larr; Webhook</a></p>
+{% if items %}
+<div class="table-wrap">
+<table class="table">
+  <caption class="sr-only">Ultimi 200 invii webhook</caption>
+  <thead><tr><th scope="col">Data</th><th scope="col">Webhook</th><th scope="col">Evento</th><th scope="col">Stato</th><th scope="col">Tentativi</th><th scope="col">Errore</th></tr></thead>
+  <tbody>
+  {% for i in items %}
+    <tr>
+      <td class="mono nowrap">{{ i.created_at|dt }}</td>
+      <td>{{ i.webhook.name if i.webhook else '—' }}</td>
+      <td>{{ EVENTS.get(i.event, i.event) }}</td>
+      <td><span class="tag {{ 'tag--in_use' if i.status == 'sent' else ('tag--faulty' if i.status == 'dead' else '') }}">{{ {'sent': 'Inviato', 'pending': 'In coda', 'dead': 'Fallito', 'failed': 'Errore'}.get(i.status, i.status) }}</span></td>
+      <td>{{ i.attempts }}</td>
+      <td>{{ i.last_error }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<div class="empty-box"><p>Nessun invio.</p></div>{% endif %}
+{% endblock %}

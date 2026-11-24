@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
+import httpx
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -16,13 +17,13 @@ from .core.headers import SecurityHeadersMiddleware
 from .database import make_engine
 from .deps import flash, is_fetch
 from .migrations.runner import run_migrations
-from .routers import audit_log, auth, backups, components, dashboard, machines, operators, settings, sign, trash
+from .routers import audit_log, auth, backups, components, dashboard, machines, operators, settings, sign, trash, webhooks
 from .services.signing import SignatureRequired
 from .worker import Worker
 
 log = logging.getLogger("magazzino")
 
-ROUTERS = [auth, dashboard, components, machines, audit_log, sign, operators, trash, settings, backups]
+ROUTERS = [auth, dashboard, components, machines, audit_log, sign, operators, trash, settings, backups, webhooks]
 
 
 async def _csrf_error(request: Request, _exc: CSRFError):
@@ -51,6 +52,7 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
         if report.from_version != report.to_version:
             log.info("Schema DB: v%s -> v%s (backup: %s)", report.from_version, report.to_version, report.backup_path)
         app.state.engine = make_engine(settings.db_path)
+        app.state.http = httpx.AsyncClient(timeout=10)
         stop = asyncio.Event()
         task = asyncio.create_task(Worker(app).run(stop)) if start_worker else None
         try:
@@ -59,6 +61,7 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
             stop.set()
             if task:
                 await task
+            await app.state.http.aclose()
             app.state.engine.dispose()
 
     app = FastAPI(

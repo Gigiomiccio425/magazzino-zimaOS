@@ -1,0 +1,5 @@
+{# Uso: {% with notify_checked=..., notify_label=... %}{% include "partials/notify_checkbox.html" %}{% endwith %} #}
+<label class="check check--notify">
+  <input type="checkbox" name="notify" value="1" {% if notify_checked %}checked{% endif %}>
+  {{ notify_label or 'Pubblica su Discord' }}
+</label>

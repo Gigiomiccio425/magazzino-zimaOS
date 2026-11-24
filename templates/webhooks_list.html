@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Webhook &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Webhook{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/webhooks/new" class="btn btn--red">+ Nuovo webhook</a>
+  <a href="/webhooks/log" class="btn btn--outline">Registro invii</a>
+</div>
+<p class="lead">Gli avvisi partono solo quando un operatore salva un'azione con "Pubblica su Discord" spuntato. Nessuna menzione @everyone: si può taggare solo un ruolo, solo per incidenti SEV1.</p>
+{% if hooks %}
+<div class="table-wrap">
+<table class="table">
+  <caption class="sr-only">Webhook configurati</caption>
+  <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">URL</th><th scope="col">Eventi</th><th scope="col">Stato</th><th scope="col">Azioni</th></tr></thead>
+  <tbody>
+  {% for h in hooks %}
+    <tr>
+      <td class="strong">{{ h.name }}</td>
+      <td>{{ 'Discord' if h.kind == 'discord' else 'JSON' }}</td>
+      <td class="mono">{{ mask(h.url) }}</td>
+      <td>{% for e in h.events %}{{ EVENTS.get(e, e) }}{{ ', ' if not loop.last }}{% endfor %}{% if h.min_severity %} &middot; da {{ h.min_severity }}{% endif %}</td>
+      <td>{% if h.enabled %}<span class="tag tag--in_use">Attivo</span>{% else %}<span class="tag">Spento</span>{% endif %}</td>
+      <td class="actions">
+        <form method="post" action="/webhooks/{{ h.id }}/test">{{ csrf_field() }}<button type="submit" class="btn btn--black btn--sm">Invia test</button></form>
+        <a href="/webhooks/{{ h.id }}/edit" class="btn btn--outline btn--sm">Modifica</a>
+        <form method="post" action="/webhooks/{{ h.id }}/delete" data-sign="critical" data-confirm="Eliminare il webhook {{ h.name }}?">{{ csrf_field() }}<button type="submit" class="btn btn--danger btn--sm">Elimina</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-box"><p>Nessun webhook. Su Discord: Impostazioni canale &rarr; Integrazioni &rarr; Webhook &rarr; Copia URL.</p></div>
+{% endif %}
+{% endblock %}
