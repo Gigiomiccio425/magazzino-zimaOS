@@ -15,7 +15,7 @@
   <div class="detail-actions">
     <a href="/locations/{{ loc.id }}/edit" class="btn btn--red">Modifica</a>
     <a href="/locations/new?parent={{ loc.id }}" class="btn btn--black">+ Sottoposizione</a>
-    <a href="/labels?locations={{ loc.id }}" class="btn btn--outline">Etichetta QR</a>
+    <form method="post" action="/print/add" class="inline-form--btn">{{ csrf_field() }}<input type="hidden" name="entity_type" value="location"><input type="hidden" name="id" value="{{ loc.id }}"><input type="hidden" name="next" value="{{ request.url.path }}"><button type="submit" class="btn btn--outline">Aggiungi alla stampa</button></form>
     {% block location_actions %}{% endblock %}
     <a href="/locations" class="btn btn--ghost">&larr; Posizioni</a>
   </div>

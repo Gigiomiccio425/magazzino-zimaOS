@@ -22,7 +22,7 @@
       {{ csrf_field() }}
       <button type="submit" class="btn btn--black">Duplica</button>
     </form>
-    <a href="/labels?components={{ c.id }}" class="btn btn--outline">Etichetta QR</a>
+    <form method="post" action="/print/add" class="inline-form--btn">{{ csrf_field() }}<input type="hidden" name="entity_type" value="component"><input type="hidden" name="id" value="{{ c.id }}"><input type="hidden" name="next" value="{{ request.url.path }}"><button type="submit" class="btn btn--outline">Aggiungi alla stampa</button></form>
     {% block component_actions %}{% endblock %}
     <a href="/components" class="btn btn--ghost">&larr; Lista</a>
   </div>

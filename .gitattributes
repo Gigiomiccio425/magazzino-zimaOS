@@ -3,3 +3,4 @@
 *.wasm binary
 *.db binary
 *.zip binary
+*.woff2 binary

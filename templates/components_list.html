@@ -71,6 +71,19 @@
 
 <div class="bulk-bar" id="bulk-bar" hidden role="region" aria-label="Azioni sui selezionati">
   <strong id="bulk-count" aria-live="polite"></strong>
+  <form method="post" action="/print/add" class="bulk-form bulk-print">
+    {{ csrf_field() }}
+    <input type="hidden" name="entity_type" value="component">
+    <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+    <button type="submit" class="btn btn--red btn--sm">Aggiungi alla stampa</button>
+    <label class="bulk-print__as">come
+      <select name="format" class="input input--sm">
+        <option value="">automatico</option>
+        <option value="label">Etichetta</option>
+        <option value="qr">Solo QR</option>
+        <option value="flag">Bandiera cavo</option>
+      </select></label>
+  </form>
   <form method="post" action="/components/bulk" class="bulk-form">
     {{ csrf_field() }}
     <label class="sr-only" for="bulk-action">Azione</label>
@@ -89,7 +102,6 @@
     <span data-bulk-for="add_tag"><input type="text" name="tag" class="input input--sm" placeholder="tag" aria-label="Tag"></span>
     <button type="submit" class="btn btn--black btn--sm">Applica</button>
   </form>
-  <a href="/labels" id="bulk-labels" class="btn btn--outline btn--sm">Etichette</a>
   <form method="post" action="/components/bulk/delete" class="bulk-form" data-sign="critical"
         data-confirm="Spostare nel cestino i componenti selezionati?">
     {{ csrf_field() }}

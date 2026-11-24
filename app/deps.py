@@ -62,6 +62,7 @@ templates.env.globals["asset"] = _asset
 templates.env.globals["STATUSES"] = STATUSES
 templates.env.globals["APP_VERSION"] = APP_VERSION
 templates.env.globals["current_year"] = utcnow().year
+templates.env.globals["today"] = lambda: to_local(utcnow()).strftime("%d/%m/%Y")
 templates.env.filters["dt"] = _fmt_dt
 templates.env.filters["md"] = render_markdown
 
@@ -73,11 +74,24 @@ def flash(request: Request, message: str, category: str = "success"):
     request.session["flashes"] = msgs
 
 
+def _print_count(request: Request) -> int:
+    """Etichette in coda di stampa, per il contatore nel menu."""
+    engine = getattr(request.app.state, "engine", None)
+    if engine is None:
+        return 0
+    try:
+        with engine.connect() as conn:
+            return int(conn.exec_driver_sql("SELECT COALESCE(SUM(copies), 0) FROM print_queue").scalar() or 0)
+    except Exception:  # tabella non ancora creata o DB occupato: il menu non deve rompere la pagina
+        return 0
+
+
 def render(request: Request, template_name: str, context: dict | None = None, status_code: int = 200):
     ctx = dict(context or {})
     ctx["APP_NAME"] = request.app.state.settings.app_name
     ctx["flashes"] = request.session.pop("flashes", [])
     ctx["signer"] = session_signer(request)
+    ctx.setdefault("print_count", _print_count(request))
     return templates.TemplateResponse(request, template_name, ctx, status_code=status_code)
 
 

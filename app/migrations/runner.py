@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from . import m0001_baseline, m0002_schema_v2, m0003_backfill_seed
+from . import m0001_baseline, m0002_schema_v2, m0003_backfill_seed, m0004_print_queue
 from .util import add_column  # noqa: F401  (riesportato)
 
 log = logging.getLogger("magazzino.migrations")
@@ -42,6 +42,7 @@ MIGRATIONS: list[Migration] = [
     Migration(1, "baseline v1.1.1", m0001_baseline.apply),
     Migration(2, "schema v2", m0002_schema_v2.apply),
     Migration(3, "backfill e seed v2", m0003_backfill_seed.apply),
+    Migration(4, "coda di stampa", m0004_print_queue.apply),
 ]
 LATEST_VERSION = max(m.version for m in MIGRATIONS)
 

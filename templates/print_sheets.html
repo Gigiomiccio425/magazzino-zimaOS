@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Fogli da stampare &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Fogli da stampare{% endblock %}
+
+{% block content %}
+<div class="toolbar no-print">
+  <button type="button" class="btn btn--red" data-print>Stampa</button>
+  <a href="{{ back }}" class="btn btn--outline">Torna alla coda</a>
+</div>
+<p class="no-print lead">
+  {% set total = namespace(n=0) %}{% for s in sheets %}{% set total.n = total.n + s.pages|length %}{% endfor %}
+  {{ total.n }} {{ 'foglio' if total.n == 1 else 'fogli' }} A4. Nella finestra di stampa scegli scala 100% (o "dimensioni reali") e margini nessuno.
+  Per un PDF scegli "Salva come PDF" come stampante.
+</p>
+{% if not sheets %}
+<div class="empty-box no-print"><p>Niente da stampare in questo formato.</p></div>
+{% endif %}
+<div class="sheets">
+  {% for s in sheets %}
+    {% for page in s.pages %}
+      {% with fmt=s.sheet.format, cuts=opts.cuts, sheet=s.sheet %}{% include "partials/print_sheet.html" %}{% endwith %}
+    {% endfor %}
+  {% endfor %}
+</div>
+{% endblock %}

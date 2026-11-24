@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Stampa etichette &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Stampa etichette{% endblock %}
+
+{% block content %}
+<div class="print-head">
+  <p class="lead">
+    {% if entries %}{{ total_copies }} etichette di {{ entries|length }} elementi, su {{ total_pages }} {{ 'foglio' if total_pages == 1 else 'fogli' }} A4.
+    {% else %}La coda è vuota.{% endif %}
+  </p>
+  {% if entries %}
+  <div class="toolbar">
+    <a href="/print/sheets?{{ query_for(sheet=none) }}" class="btn btn--red">Stampa tutti i fogli</a>
+    <a href="/print/sheets?{{ query }}" class="btn btn--outline">Solo {{ SHEET_NAMES[opts.sheet]|lower }}</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if not entries %}
+<div class="empty-box">
+  <p>Seleziona dei pezzi nella lista componenti e scegli "Aggiungi alla stampa", oppure usa il pulsante nella scheda di un pezzo, di una posizione o di una macchina.</p>
+  <a href="/components" class="btn btn--red">Vai ai componenti</a>
+</div>
+{% else %}
+<div class="print-grid">
+
+  <section class="panel print-queue" aria-labelledby="pq-title">
+    <div class="panel__head">
+      <h2 class="panel__title" id="pq-title">Coda</h2>
+      <span class="mono muted">{{ entries|length }} elementi · {{ total_copies }} copie</span>
+    </div>
+    <div class="pq-all">
+      <span class="pq-all__label">Tutti come</span>
+      {% for code, label in FORMATS.items() %}
+      <form method="post" action="/print/all">{{ csrf_field() }}<input type="hidden" name="next" value="{{ self_url }}">
+        <button type="submit" name="format" value="{{ code }}" class="btn btn--sm btn--outline">{{ label }}</button></form>
+      {% endfor %}
+      <form method="post" action="/print/clear" class="pq-all__clear" data-confirm="Togliere tutti gli elementi dalla coda di stampa?">
+        {{ csrf_field() }}<input type="hidden" name="next" value="/print">
+        <button type="submit" class="link-btn">Svuota coda</button></form>
+    </div>
+    <ul class="pq-list">
+      {% for e in entries %}
+      <li class="pq-item">
+        <div class="pq-item__info">
+          <a href="/{{ 'components' if e.entity_type == 'component' else ('locations' if e.entity_type == 'location' else 'machines') }}/{{ e.entity_id }}" class="strong">{{ e.title }}</a>
+          <span class="mono muted">{{ e.tag }} · {{ e.place }}</span>
+        </div>
+        <form method="post" action="/print/item/{{ e.item_id }}" class="stepper" aria-label="Copie di {{ e.title }}">
+          {{ csrf_field() }}<input type="hidden" name="next" value="{{ self_url }}">
+          <button type="submit" name="copies" value="{{ e.copies - 1 }}" aria-label="Una copia in meno" {% if e.copies <= 1 %}disabled{% endif %}>&minus;</button>
+          <span class="stepper__value">{{ e.copies }}</span>
+          <button type="submit" name="copies" value="{{ e.copies + 1 }}" aria-label="Una copia in più">+</button>
+        </form>
+        <form method="post" action="/print/item/{{ e.item_id }}" class="segmented" role="group" aria-label="Formato di {{ e.title }}">
+          {{ csrf_field() }}<input type="hidden" name="next" value="{{ self_url }}">
+          {% for code, label in FORMATS.items() %}
+          <button type="submit" name="format" value="{{ code }}" aria-pressed="{{ 'true' if e.format == code else 'false' }}">{{ label }}</button>
+          {% endfor %}
+        </form>
+        <form method="post" action="/print/item/{{ e.item_id }}/remove" class="pq-item__remove">
+          {{ csrf_field() }}<input type="hidden" name="next" value="{{ self_url }}">
+          <button type="submit" class="link-btn" aria-label="Togli {{ e.title }} dalla coda">Togli</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="print-preview" aria-label="Anteprima di stampa">
+    <div class="tabs" role="tablist" aria-label="Formato dei fogli">
+      {% for code, name in SHEET_NAMES.items() %}
+      {% set n, pages = counts[code] %}
+      <a href="/print?{{ query_for(sheet=code) }}" role="tab" class="tab" aria-selected="{{ 'true' if code == opts.sheet else 'false' }}">
+        {{ name }} <span class="mono">{{ n }} · {{ pages }} {{ 'foglio' if pages == 1 else 'fogli' }}</span></a>
+      {% endfor %}
+    </div>
+
+    <form method="get" action="/print" class="print-options">
+      <input type="hidden" name="sheet" value="{{ opts.sheet }}">
+      {% if opts.sheet == 'flag' %}
+      <label class="print-options__field">Diametro cavo (mm)
+        <input type="number" name="diam" value="{{ opts.diam }}" min="2" max="14" class="input input--sm"></label>
+      <span class="mono muted">giro {{ sheet.wrap|int }} mm · bandiera {{ sheet.cell_w|int }} mm · {{ sheet.cols }} per riga</span>
+      {% else %}<input type="hidden" name="diam" value="{{ opts.diam }}">{% endif %}
+      <label class="print-options__field">Parti dalla casella
+        <input type="number" name="start" value="{{ opts.start }}" min="1" max="{{ sheet.per_page }}" class="input input--sm"></label>
+      <input type="hidden" name="cuts" value="0">
+      <label class="check"><input type="checkbox" name="cuts" value="1" {% if opts.cuts %}checked{% endif %}> Linee di taglio</label>
+      <button type="submit" class="btn btn--sm btn--outline">Aggiorna anteprima</button>
+    </form>
+
+    {% if preview %}
+    <div class="sheet-stage">
+      <div class="sheet-scale">
+        {% with page=preview, fmt=opts.sheet, cuts=opts.cuts, sheet=sheet %}{% include "partials/print_sheet.html" %}{% endwith %}
+      </div>
+    </div>
+    <p class="muted small">Primo foglio a metà della grandezza reale. "Parti dalla casella" salta le etichette già usate di un foglio iniziato.
+      {% if opts.sheet == 'flag' %}La zona tratteggiata si avvolge attorno al cavo, poi i due lati si chiudono uno sull'altro.{% endif %}</p>
+    {% else %}
+    <div class="empty-box"><p>Nessun elemento in questo formato.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

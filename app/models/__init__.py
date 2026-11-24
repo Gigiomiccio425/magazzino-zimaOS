@@ -10,5 +10,5 @@ from .ops import (  # noqa: F401
     incident_services, maintenance_services, problem_incidents, problem_services,
 )
 from .security import AuditLog, Operator, OperatorCredential, Signature  # noqa: F401
-from .system import Setting  # noqa: F401
+from .system import PrintItem, Setting  # noqa: F401
 from .verification import TestRun, TestTemplate  # noqa: F401

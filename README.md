@@ -15,6 +15,8 @@ un solo container Docker. Pensato per **Umbrel** e **ZimaOS**.
 - Articoli **a seriale** (una GPU = una scheda) o **a quantità** (cavi, viti) con scorta minima.
 - **Posizioni ad albero** (stanza › scaffale › box) e **QR** su ogni prodotto, posizione e macchina:
   la fotocamera del telefono apre direttamente la scheda. Etichette stampabili 25×25, 50×25, A4.
+- **Zona stampa**: coda di etichette per più pezzi insieme, su A4: etichetta 70×37 mm, solo QR o
+  **bandiera per cavi** (si avvolge attorno al cavo e si chiude su sé stessa), con anteprima del foglio.
 - **Campi per categoria** (VRAM, capacità, lunghezza cavo…) con filtri numerici e a scelta.
 - Foto e allegati (i metadati GPS vengono rimossi), acquisto e garanzia, tag, stati estesi
   (da testare, testato OK, in RMA, venduto…).
@@ -53,7 +55,7 @@ Dati: `/Apps/g-d-app-store-gd-magazzino/data` (database, allegati, backup).
 ```yaml
 services:
   magazzino:
-    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.0.3
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.2.0
     ports: ["8086:8000"]
     environment:
       - TZ=Europe/Rome
@@ -109,3 +111,7 @@ Struttura: `app/` (FastAPI: `routers/`, `services/`, `models/`, `migrations/`), 
 
 Rilascio: `git tag -a vX.Y.Z && git push origin vX.Y.Z` → GitHub Actions esegue i test e
 pubblica `ghcr.io/gigiomiccio425/magazzino-zimaos:X.Y.Z`.
+
+## Font
+
+Archivo e DM Mono sono inclusi in `static/fonts/` (SIL Open Font License 1.1, testi in `OFL-*.txt`).

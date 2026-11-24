@@ -13,7 +13,7 @@
   </div>
   <div class="detail-actions">
     <a href="/machines/{{ machine.id }}/edit" class="btn btn--red">Modifica</a>
-    <a href="/labels?machines={{ machine.id }}" class="btn btn--outline">Etichetta QR</a>
+    <form method="post" action="/print/add" class="inline-form--btn">{{ csrf_field() }}<input type="hidden" name="entity_type" value="machine"><input type="hidden" name="id" value="{{ machine.id }}"><input type="hidden" name="next" value="{{ request.url.path }}"><button type="submit" class="btn btn--outline">Aggiungi alla stampa</button></form>
     <a href="/machines" class="btn btn--ghost">&larr; Lista</a>
   </div>
 </div>

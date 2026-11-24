@@ -95,6 +95,8 @@
   // ---- Invio form via fetch (usato da sign.js): segue {"redirect": url} ----
   MAG.submitForm = function (form, extra) {
     var fd = new FormData(form);
+    var sb = form._submitter;
+    if (sb && sb.name) fd.append(sb.name, sb.value);
     Object.keys(extra || {}).forEach(function (k) { fd.set(k, extra[k]); });
     var method = (form.getAttribute("method") || "post").toUpperCase();
     return MAG.fetchJSON(form.getAttribute("action") || window.location.pathname, { method: method, body: fd })
@@ -130,9 +132,30 @@
     });
   }
 
+  // ---- Sidebar: resta allo stesso punto quando si cambia pagina ----
+  var sidebar = document.getElementById("sidebar");
+  if (sidebar) {
+    var SIDEBAR_KEY = "mag-sidebar-scroll";
+    var savedTop = null;
+    try { savedTop = sessionStorage.getItem(SIDEBAR_KEY); } catch (e) {}
+    if (savedTop !== null) sidebar.scrollTop = parseInt(savedTop, 10) || 0;
+    // La voce della pagina aperta deve essere visibile anche arrivando da un link esterno
+    var activeLink = sidebar.querySelector(".nav__link.is-active");
+    if (activeLink) {
+      var r = activeLink.getBoundingClientRect(), box = sidebar.getBoundingClientRect();
+      if (r.top < box.top || r.bottom > box.bottom) {
+        sidebar.scrollTop += r.top - box.top - (box.height - r.height) / 2;
+      }
+    }
+    var saveSidebar = function () {
+      try { sessionStorage.setItem(SIDEBAR_KEY, String(sidebar.scrollTop)); } catch (e) {}
+    };
+    sidebar.addEventListener("click", function (e) { if (e.target.closest("a")) saveSidebar(); });
+    window.addEventListener("pagehide", saveSidebar);
+  }
+
   // ---- Sidebar mobile ----
   var burger = document.getElementById("burger");
-  var sidebar = document.getElementById("sidebar");
   if (burger && sidebar) {
     var setOpen = function (open) {
       sidebar.classList.toggle("is-open", open);

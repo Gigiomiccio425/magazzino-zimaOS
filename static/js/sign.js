@@ -169,6 +169,7 @@
     if (form.getAttribute("data-confirm") && form.dataset.confirmed !== "1") return;
     e.preventDefault();
     delete form.dataset.confirmed;
+    form._submitter = e.submitter || null;  // il pulsante premuto porta il suo name/value
     send(form);
   });
 

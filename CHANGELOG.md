@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.2.0 — 2026-11
+
+Nuovo design e zona stampa etichette.
+- Stile "Banco + Etichetta": barra laterale chiara, ricerca e "Scansiona etichetta" sempre in alto,
+  giallo sicurezza per le azioni principali, rosso solo per guasti e incidenti, titoli stretti,
+  codici in monospace. Tema scuro e telefono aggiornati. Font Archivo e DM Mono inclusi nell'app (licenza OFL).
+- Zona stampa (menu "Stampa etichette"): coda con più pezzi insieme; per ognuno si sceglie
+  etichetta 70 × 37 mm, solo QR (30 mm) o bandiera per cavi, e il numero di copie.
+  Anteprima del foglio A4, "parti dalla casella" per riusare fogli già iniziati, linee di taglio,
+  stampa di tutti i fogli in una volta (o "Salva come PDF").
+- Bandiera per cavi: lato A, zona di giro e lato B con QR su entrambe le facce; la zona di giro si
+  calcola dal diametro del cavo. I cavi entrano in coda già come bandiera.
+- "Aggiungi alla stampa" dalla selezione multipla dei componenti e dalle schede di componenti,
+  posizioni e macchine. La coda resta salvata (migrazione 4: solo una tabella nuova).
+- La barra laterale resta allo stesso punto quando si cambia pagina e mostra sempre la voce aperta.
+- Mobile: nelle tabelle trasformate in schede i valori tornano visibili.
+- Dashboard: le etichette dell'attività recente non si allargano più a tutta la riga.
+
 ## 2.0.3 — 2026-11
 
 - Dopo un salvataggio la pagina resta dove eri, invece di tornare in cima; i messaggi di conferma

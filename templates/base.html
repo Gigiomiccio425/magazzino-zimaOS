@@ -14,12 +14,15 @@
 </head>
 <body>
   <a href="#main" class="skip-link">Vai al contenuto</a>
+  <div class="hazard" aria-hidden="true"></div>
   <div class="layout">
     <aside class="sidebar" id="sidebar" aria-label="Navigazione principale">
       <div class="brand">
-        <div class="brand__mark" aria-hidden="true"></div>
-        <a href="/" class="brand__name">{{ APP_NAME }}</a>
-        <div class="brand__sub">HARDWARE / COMANDO</div>
+        <div class="brand__mark" aria-hidden="true">GD</div>
+        <div>
+          <a href="/" class="brand__name">{{ APP_NAME }}</a>
+          <div class="brand__sub">hardware · comando</div>
+        </div>
       </div>
       {% set path = request.url.path %}
       {% macro navlink(href, label, match=None) -%}
@@ -36,6 +39,8 @@
           {{ navlink("/locations", "Posizioni") }}
           {{ navlink("/machines", "Macchine") }}
           {{ navlink("/movements", "Movimenti") }}
+          <a href="/print" class="nav__link{% if nav_current(path, '/print') %} is-active{% endif %}"
+             {% if nav_current(path, '/print') %}aria-current="page"{% endif %}>Stampa etichette{% if print_count %}<span class="nav__count">{{ print_count }}</span>{% endif %}</a>
           {{ navlink("/projects", "Progetti") }}
           {% block nav_magazzino %}{% endblock %}
         </div>
@@ -68,25 +73,27 @@
       <div class="nav__foot">
         <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Tema scuro</button>
         <a href="/components/new" class="btn btn--red btn--block">+ Componente</a>
-        <a href="/machines/new" class="btn btn--outline-light btn--block">+ Macchina</a>
+        <a href="/machines/new" class="btn btn--outline btn--block">+ Macchina</a>
       </div>
-      <div class="sidebar__deco" aria-hidden="true"></div>
     </aside>
 
     <main class="main" id="main" tabindex="-1">
       <header class="topbar">
         <button class="burger" id="burger" type="button" aria-label="Apri menu"
                 aria-controls="sidebar" aria-expanded="false">&#9776;</button>
-        <h1 class="topbar__title">{% block heading %}{% endblock %}</h1>
-        <div class="topbar__bar" aria-hidden="true"></div>
-        <a href="/search" class="btn btn--outline btn--sm topbar__search" data-open-palette aria-keyshortcuts="Control+K">Cerca <kbd>Ctrl K</kbd></a>
+        <a href="/search" class="topbar__search" data-open-palette aria-keyshortcuts="Control+K">
+          <span>Cerca un pezzo, un tag o uno scaffale</span><kbd>Ctrl K</kbd></a>
         {% if signer %}
         <div class="signer-badge" role="status">
           <span>Firmato: <strong>{{ signer.name }}</strong></span>
           <button type="button" class="link-btn" id="signer-logout">Esci</button>
         </div>
         {% endif %}
+        <button type="button" class="btn btn--red topbar__scan" data-scan-search>Scansiona etichetta</button>
       </header>
+      <div class="page-head">
+        <h1 class="page-title">{% block heading %}{% endblock %}</h1>
+      </div>
 
       <div class="flashes" aria-live="polite" role="status">
         {% for f in flashes %}

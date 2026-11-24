@@ -1,0 +1,37 @@
+<div class="sheet sheet--{{ fmt }}{% if cuts %} sheet--cuts{% endif %}">
+  {% for s in page %}
+  <div class="slot{% if not s.entry %} slot--empty{% endif %}" style="{{ s.style }}">
+    {% if s.entry %}{% set e = s.entry %}
+      {% if fmt == 'label' %}
+      <div class="plabel">
+        <div class="plabel__text">
+          <span class="plabel__place">{{ e.place }}</span>
+          <span class="plabel__title">{{ e.title }}</span>
+          <span class="plabel__tag">{{ e.tag }}{% if e.sub %} · {{ e.sub }}{% endif %}</span>
+        </div>
+        <div class="plabel__qr">{{ s.svg|safe }}</div>
+      </div>
+      {% elif fmt == 'qr' %}
+      <div class="pqr">
+        <div class="pqr__qr">{{ s.svg|safe }}</div>
+        <span class="pqr__tag">{{ e.tag }}</span>
+      </div>
+      {% else %}
+      <div class="pflag">
+        {% for side in ['a', 'b'] %}
+        <div class="pflag__side">
+          <div class="pflag__qr">{{ s.svg|safe }}</div>
+          <div class="pflag__text">
+            <span class="pflag__place">{{ e.place }}</span>
+            <span class="pflag__title">{{ e.short }}</span>
+            <span class="pflag__tag">{{ e.tag }}</span>
+          </div>
+        </div>
+        {% if side == 'a' %}<div class="pflag__wrap" style="width:{{ sheet.wrap }}mm"><span>giro</span></div>{% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
