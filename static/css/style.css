@@ -741,3 +741,13 @@ select.input { cursor: pointer; }
 .palette__hint { margin: 0; font-size: 12px; }
 .topbar__search { flex-shrink: 0; }
 .topbar__search kbd { font-family: ui-monospace, Consolas, monospace; font-size: 11px; border: 1px solid currentColor; padding: 0 4px; margin-left: 6px; }
+
+/* ---- Dashboard centro di comando ---- */
+.cmd-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.cmd-tile { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 3px solid var(--black); background: var(--white); box-shadow: var(--shadow-sm); }
+.cmd-tile__num { font-size: 30px; font-weight: 900; line-height: 1; }
+.cmd-tile__label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.cmd-tile__sub { font-size: 12px; font-weight: 700; }
+.cmd-tile--alert { background: var(--red); color: #fff; }
+.cmd-tile--warn { background: var(--yellow); color: var(--black); }
+.cmd-tile--ok { background: var(--black); color: var(--paper); }

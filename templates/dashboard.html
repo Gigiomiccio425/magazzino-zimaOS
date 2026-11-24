@@ -1,82 +1,97 @@
 {% extends "base.html" %}
 {% block title %}Dashboard &middot; {{ APP_NAME }}{% endblock %}
-{% block heading %}Dashboard{% endblock %}
+{% block heading %}Centro di comando{% endblock %}
 
 {% block content %}
+{% set sev = cc.open_incidents_by_severity %}
+<section class="cmd-strip" aria-label="Situazione">
+  <a href="/incidents?status=open" class="cmd-tile {{ 'cmd-tile--alert' if sev else 'cmd-tile--ok' }}">
+    <span class="cmd-tile__num">{{ cc.open_incidents|length }}</span>
+    <span class="cmd-tile__label">Incidenti aperti</span>
+    {% if sev %}<span class="cmd-tile__sub">{% for code in SEVERITIES if sev.get(code) %}{{ code }}: {{ sev[code] }}{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}
+  </a>
+  <a href="/status" class="cmd-tile {{ 'cmd-tile--alert' if cc.services_by_status.get('major_outage') or cc.services_by_status.get('partial_outage') else 'cmd-tile--ok' if cc.services_by_status else '' }}">
+    <span class="cmd-tile__num">{{ cc.services_by_status.get('operational', 0) }}/{{ cc.services_by_status.values()|sum }}</span>
+    <span class="cmd-tile__label">Servizi operativi</span>
+  </a>
+  <a href="/components?low_stock=1" class="cmd-tile {{ 'cmd-tile--warn' if cc.low_stock else '' }}">
+    <span class="cmd-tile__num">{{ cc.low_stock|length }}</span><span class="cmd-tile__label">Scorte basse</span></a>
+  <a href="/tests/queue" class="cmd-tile {{ 'cmd-tile--warn' if cc.to_test_count else '' }}">
+    <span class="cmd-tile__num">{{ cc.to_test_count }}</span><span class="cmd-tile__label">Da testare</span></a>
+  <div class="cmd-tile">
+    <span class="cmd-tile__num">{{ '%.2f'|format(cc.inventory_value_cents / 100)|replace('.', ',') }} €</span>
+    <span class="cmd-tile__label">Valore magazzino</span></div>
+</section>
+
 <section class="stats">
-  <a href="/components" class="stat stat--red">
-    <div class="stat__num">{{ stats.total }}</div>
-    <div class="stat__label">Componenti</div>
-  </a>
-  <div class="stat">
-    <div class="stat__num">{{ stats.units }}</div>
-    <div class="stat__label">Pezzi totali</div>
-  </div>
-  <a href="/components?status=stock" class="stat">
-    <div class="stat__num">{{ stats.stock }}</div>
-    <div class="stat__label">A magazzino</div>
-  </a>
-  <a href="/components?status=in_use" class="stat stat--black">
-    <div class="stat__num">{{ stats.in_use }}</div>
-    <div class="stat__label">In uso</div>
-  </a>
-  <a href="/components?status=faulty" class="stat">
-    <div class="stat__num">{{ stats.faulty }}</div>
-    <div class="stat__label">Guasti</div>
-  </a>
-  <a href="/machines" class="stat">
-    <div class="stat__num">{{ stats.machines }}</div>
-    <div class="stat__label">Macchine</div>
-  </a>
+  <a href="/components" class="stat stat--red"><div class="stat__num">{{ stats.total }}</div><div class="stat__label">Componenti</div></a>
+  <div class="stat"><div class="stat__num">{{ stats.units }}</div><div class="stat__label">Pezzi totali</div></div>
+  <a href="/components?status=stock" class="stat"><div class="stat__num">{{ stats.stock }}</div><div class="stat__label">A magazzino</div></a>
+  <a href="/components?status=in_use" class="stat stat--black"><div class="stat__num">{{ stats.in_use }}</div><div class="stat__label">In uso</div></a>
+  <a href="/components?status=faulty" class="stat"><div class="stat__num">{{ stats.faulty }}</div><div class="stat__label">Guasti</div></a>
+  <a href="/machines" class="stat"><div class="stat__num">{{ stats.machines }}</div><div class="stat__label">Macchine</div></a>
 </section>
 
 <div class="grid-2">
+  {% if cc.open_incidents %}
   <section class="panel">
-    <div class="panel__head">
-      <h2 class="panel__title">Movimenti recenti</h2>
-      <a href="/movements" class="link-more">Tutti &rarr;</a>
-    </div>
-    {% if recent %}
+    <div class="panel__head"><h2 class="panel__title">Incidenti aperti</h2><a href="/incidents?status=open" class="link-more">Tutti &rarr;</a></div>
+    <ul class="timeline">{% for i in cc.open_incidents[:6] %}
+      <li class="timeline__item"><span class="sev sev--{{ i.severity }}">{{ i.severity }}</span>
+        <a class="timeline__name" href="/incidents/{{ i.id }}">{{ i.title }}</a>
+        <span class="timeline__note">{{ INCIDENT_STATUSES.get(i.status) }}</span><time class="timeline__time">{{ i.started_at|dt }}</time></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% if cc.upcoming_maintenance %}
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Manutenzioni (7 giorni)</h2><a href="/maintenance" class="link-more">Tutte &rarr;</a></div>
+    <ul class="timeline">{% for m in cc.upcoming_maintenance %}
+      <li class="timeline__item"><span class="tag">{{ 'In corso' if m.status == 'in_progress' else 'Programmata' }}</span>
+        <span class="timeline__name">{{ m.title }}</span><time class="timeline__time">{{ m.starts_at|dt }}</time></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% if cc.low_stock or cc.warranty_expiring %}
+  <section class="panel">
+    <h2 class="panel__title">Da controllare</h2>
     <ul class="timeline">
-      {% for mv in recent %}
-      <li class="timeline__item">
-        <a href="/components/{{ mv.component_id }}" class="timeline__name">
-          {{ mv.component.name if mv.component else 'Componente' }}
-        </a>
-        <span class="tag tag--{{ mv.action }}">{{ mv.action }}</span>
-        <span class="timeline__note">
-          {% if mv.from_machine or mv.to_machine %}
-            {{ mv.from_machine or 'Magazzino' }} &rarr; {{ mv.to_machine or 'Magazzino' }}
-          {% else %}{{ mv.note }}{% endif %}
-        </span>
-        <time class="timeline__time">{{ mv.timestamp|dt }}</time>
-      </li>
-      {% endfor %}
+      {% for c in cc.low_stock %}<li class="timeline__item"><span class="tag tag--faulty">Scorta</span>
+        <a class="timeline__name" href="/components/{{ c.id }}">{{ c.name }}</a>
+        <span class="timeline__note">{{ c.quantity }} / minimo {{ c.min_stock }} {{ c.unit or 'pz' }}</span></li>{% endfor %}
+      {% for c in cc.warranty_expiring %}<li class="timeline__item"><span class="tag">Garanzia</span>
+        <a class="timeline__name" href="/components/{{ c.id }}">{{ c.name }}</a>
+        <span class="timeline__note">scade il {{ c.warranty_until.strftime('%d/%m/%Y') }}</span></li>{% endfor %}
     </ul>
-    {% else %}
-    <p class="empty">Nessun movimento ancora.</p>
-    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if cc.overdue_locations %}
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Inventari da fare ({{ cc.overdue_locations|length }})</h2><a href="/audits" class="link-more">Inventari &rarr;</a></div>
+    <ul class="chips-list">{% for l in cc.overdue_locations[:12] %}<li><a class="chip chip--link" href="/locations/{{ l.id }}">{{ l.name }}</a></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Attività recente</h2><a href="/audit" class="link-more">Audit log &rarr;</a></div>
+    {% if cc.recent_activity %}
+    <ul class="timeline">{% for r in cc.recent_activity %}
+      <li class="timeline__item"><span class="tag">{{ r.action }}</span>
+        <span class="timeline__name">{{ r.entity_type }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}</span>
+        <span class="timeline__note">{{ r.operator.name if r.operator else ('Sistema' if r.actor_type == 'system' else '') }}</span>
+        <time class="timeline__time">{{ r.ts|dt }}</time></li>{% endfor %}</ul>
+    {% else %}<p class="empty">Nessuna attività registrata.</p>{% endif %}
   </section>
 
   <section class="panel">
-    <div class="panel__head">
-      <h2 class="panel__title">Per categoria</h2>
-    </div>
-    {% if by_category %}
-    <ul class="bars">
-      {% for name, count in by_category %}
-      <li class="bar">
-        <span class="bar__label">{{ name or 'Senza categoria' }}</span>
-        <span class="bar__track">
-          <span class="bar__fill" style="width: {{ (count / cat_max * 100)|round(0, 'floor') }}%"></span>
-        </span>
-        <span class="bar__count">{{ count }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="empty">Aggiungi il primo componente per vedere le statistiche.</p>
-    {% endif %}
+    <div class="panel__head"><h2 class="panel__title">Per categoria</h2></div>
+    {% if cc.by_category %}
+    <ul class="bars">{% for name, count in cc.by_category %}
+      <li class="bar"><span class="bar__label">{{ name or 'Senza categoria' }}</span>
+        <span class="bar__track"><span class="bar__fill" style="width: {{ (count / cc.cat_max * 100)|round(0, 'floor') }}%"></span></span>
+        <span class="bar__count">{{ count }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="empty">Aggiungi il primo componente per vedere le statistiche.</p>{% endif %}
   </section>
 </div>
 {% endblock %}
