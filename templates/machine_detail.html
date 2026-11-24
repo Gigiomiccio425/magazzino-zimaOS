@@ -35,14 +35,14 @@
     </thead>
     <tbody>
       {% for c in components %}
-      <tr onclick="location.href='/components/{{ c.id }}'">
+      <tr>
         <td class="mono">{{ c.serial_number or '—' }}</td>
-        <td class="strong">{{ c.name }}</td>
+        <td class="strong"><a href="/components/{{ c.id }}" class="link">{{ c.name }}</a></td>
         <td>{% if c.category %}<span class="chip">{{ c.category }}</span>{% else %}—{% endif %}</td>
         <td>{{ c.model or '—' }}</td>
         <td class="num">{{ c.quantity }}</td>
         <td><span class="status status--{{ c.status }}">{{ STATUSES.get(c.status, c.status) }}</span></td>
-        <td class="row-actions"><a href="/components/{{ c.id }}/edit" class="mini" onclick="event.stopPropagation()">Modifica</a></td>
+        <td class="row-actions"><a href="/components/{{ c.id }}/edit" class="mini">Modifica</a></td>
       </tr>
       {% endfor %}
     </tbody>

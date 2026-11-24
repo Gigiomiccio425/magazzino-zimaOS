@@ -65,6 +65,12 @@ def test_no_nested_forms():
             assert depth <= 1, f"{tpl}: form annidato"
 
 
+def test_no_inline_event_handlers():
+    """La CSP blocca onclick/onsubmit inline: tutto il JS sta nei file statici."""
+    for tpl in Path("templates").rglob("*.html"):
+        assert not re.search(r"\son[a-z]+=\"", tpl.read_text(encoding="utf-8")), tpl.name
+
+
 def test_no_native_dialogs_in_js():
     for js in Path("static/js").glob("*.js"):
         text = js.read_text(encoding="utf-8")

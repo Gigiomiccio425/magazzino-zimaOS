@@ -1,71 +1,99 @@
 {% extends "base.html" %}
-{% block title %}{{ component.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% set c = component %}
+{% block title %}{{ c.name }} &middot; {{ APP_NAME }}{% endblock %}
 {% block heading %}Componente{% endblock %}
 
 {% block content %}
 <div class="detail-head">
   <div>
-    <h2 class="detail-title">{{ component.name }}</h2>
+    <h2 class="detail-title">{{ c.name }}</h2>
     <div class="detail-meta">
-      {% if component.category %}<span class="chip">{{ component.category }}</span>{% endif %}
-      <span class="status status--{{ component.status }}">{{ STATUSES.get(component.status, component.status) }}</span>
-      {% if component.asset_tag %}<span class="mono detail-code">{{ component.asset_tag }}</span>{% endif %}
-      {% if component.serial_number %}<span class="mono detail-code">S/N {{ component.serial_number }}</span>{% endif %}
+      {% if c.category %}<span class="chip">{{ c.category }}</span>{% endif %}
+      <span class="status status--{{ c.status }}">{{ STATUSES.get(c.status, c.status) }}</span>
+      {% if c.asset_tag %}<span class="mono detail-code">{{ c.asset_tag }}</span>{% endif %}
+      {% if c.serial_number %}<span class="mono detail-code">S/N {{ c.serial_number }}</span>{% endif %}
+      {% for t in c.tags %}<a class="tag-pill" href="/components?tag={{ t.name|urlencode }}">#{{ t.name }}</a>{% endfor %}
     </div>
   </div>
   <div class="detail-actions">
-    <a href="/components/{{ component.id }}/edit" class="btn btn--red">Modifica</a>
-    <form method="post" action="/components/{{ component.id }}/duplicate" class="detail-dup">
-  {{ csrf_field() }}
+    <a href="/components/{{ c.id }}/edit" class="btn btn--red">Modifica</a>
+    <form method="post" action="/components/{{ c.id }}/duplicate" class="detail-dup">
+      {{ csrf_field() }}
       <button type="submit" class="btn btn--black">Duplica</button>
     </form>
+    {% block component_actions %}{% endblock %}
     <a href="/components" class="btn btn--ghost">&larr; Lista</a>
   </div>
 </div>
+
+{% if c.tracking == 'quantity' %}
+<section class="panel qty-panel">
+  <div class="qty-now">
+    <span class="qty-now__num">{{ c.quantity }}</span>
+    <span class="qty-now__unit">{{ c.unit or 'pz' }}</span>
+    {% if available != c.quantity %}<span class="muted">disponibili {{ available }} (resto prenotato)</span>{% endif %}
+    {% if c.min_stock is not none %}
+      <span class="{{ 'tag tag--faulty' if c.quantity < c.min_stock else 'muted' }}">minimo {{ c.min_stock }}</span>
+    {% endif %}
+  </div>
+  <form method="post" action="/components/{{ c.id }}/qty" class="qty-form">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">Variazione</span>
+      <input type="number" name="delta" required inputmode="numeric" class="input input--sm" placeholder="-1 / +10"></label>
+    <label class="field"><span class="field__label">Motivo</span>
+      <input type="text" name="reason" maxlength="200" class="input" placeholder="usato per…, arrivo ordine…"></label>
+    {% with notify_checked=notify_stock, notify_label='Pubblica su Discord se va sotto il minimo' %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+    <button type="submit" class="btn btn--black">Registra</button>
+  </form>
+</section>
+{% endif %}
 
 <div class="grid-2">
   <section class="panel">
     <div class="panel__head"><h2 class="panel__title">Dettagli</h2></div>
     <dl class="specs">
-      <div class="spec"><dt>Codice oggetto</dt><dd class="mono">{{ component.object_code or '—' }}</dd></div>
-      <div class="spec"><dt>Modello</dt><dd>{{ component.model or '—' }}</dd></div>
-      <div class="spec"><dt>Produttore</dt><dd>{{ component.manufacturer or '—' }}</dd></div>
-      <div class="spec"><dt>Seriale</dt><dd class="mono">{{ component.serial_number or '—' }}</dd></div>
-      <div class="spec"><dt>Quantita</dt><dd>{{ component.quantity }}</dd></div>
-      <div class="spec"><dt>Posizione</dt><dd>
-        {% if component.machine %}<a href="/machines/{{ component.machine.id }}" class="link">{{ component.machine.name }}</a>
-        {% elif component.location %}{{ component.location }}
-        {% else %}Magazzino{% endif %}
+      <div class="spec"><dt>Codice oggetto</dt><dd class="mono">{{ c.object_code or '—' }}</dd></div>
+      <div class="spec"><dt>Modello</dt><dd>{{ c.model or '—' }}</dd></div>
+      <div class="spec"><dt>Produttore</dt><dd>{{ c.manufacturer or '—' }}</dd></div>
+      <div class="spec"><dt>Seriale</dt><dd class="mono">{{ c.serial_number or '—' }}</dd></div>
+      <div class="spec"><dt>Dove</dt><dd>
+        {% if c.machine %}<a href="/machines/{{ c.machine.id }}" class="link">{{ c.machine.name }}</a>{% endif %}
+        {% if c.place %}{% if c.machine %} &middot; {% endif %}<a href="/locations/{{ c.place.id }}" class="link">{{ location_path }}</a>{% endif %}
+        {% if not c.machine and not c.place %}{{ c.location or 'Magazzino' }}{% endif %}
       </dd></div>
-      <div class="spec"><dt>Creato</dt><dd>{{ component.created_at|dt }}</dd></div>
-      <div class="spec"><dt>Aggiornato</dt><dd>{{ component.updated_at|dt }}</dd></div>
+      {% if c.last_test_at %}<div class="spec"><dt>Ultimo test</dt><dd>{{ {'pass': 'OK', 'fail': 'Fallito', 'partial': 'Parziale', 'inconclusive': 'Non concluso'}.get(c.last_test_result, c.last_test_result) }} &middot; {{ c.last_test_at|dt }}</dd></div>{% endif %}
+      {% if c.supplier %}<div class="spec"><dt>Fornitore</dt><dd>{{ c.supplier }}</dd></div>{% endif %}
+      {% if c.purchase_date %}<div class="spec"><dt>Acquisto</dt><dd>{{ c.purchase_date.strftime('%d/%m/%Y') }}</dd></div>{% endif %}
+      {% if c.purchase_price is not none %}<div class="spec"><dt>Prezzo</dt><dd>{{ '%.2f'|format(c.purchase_price / 100)|replace('.', ',') }} €</dd></div>{% endif %}
+      {% if c.warranty_until %}<div class="spec"><dt>Garanzia</dt><dd>fino al {{ c.warranty_until.strftime('%d/%m/%Y') }}</dd></div>{% endif %}
+      {% if c.invoice_ref %}<div class="spec"><dt>Fattura</dt><dd>{{ c.invoice_ref }}</dd></div>{% endif %}
+      <div class="spec"><dt>Creato</dt><dd>{{ c.created_at|dt }}</dd></div>
+      <div class="spec"><dt>Aggiornato</dt><dd>{{ c.updated_at|dt }}</dd></div>
     </dl>
 
-    {% if component.attributes %}
-    <h3 class="subhead">Attributi</h3>
+    {% if c.attributes %}
+    <h3 class="subhead">Caratteristiche</h3>
     <dl class="specs specs--attr">
-      {% for k, v in component.attributes.items() %}
-      <div class="spec"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
+      {% for k, v in c.attributes.items() %}
+      {% set f = field_by_key.get(k) %}
+      <div class="spec"><dt>{{ f.label if f else k }}</dt><dd>{% if v is sameas true %}Sì{% else %}{{ v }}{% endif %}{% if f and f.unit and v is not sameas true %} {{ f.unit }}{% endif %}</dd></div>
       {% endfor %}
     </dl>
     {% endif %}
 
-    {% if component.notes %}
-    <h3 class="subhead">Note</h3>
-    <p class="notes">{{ component.notes }}</p>
-    {% endif %}
+    {% if c.notes %}<h3 class="subhead">Note</h3><p class="notes">{{ c.notes }}</p>{% endif %}
   </section>
 
   <section class="panel">
     <div class="panel__head"><h2 class="panel__title">Storico</h2></div>
-    {% if component.movements %}
+    {% if c.movements %}
     <ul class="timeline">
-      {% for mv in component.movements %}
+      {% for mv in c.movements %}
       <li class="timeline__item">
         <span class="tag tag--{{ mv.action }}">{{ mv.action }}</span>
         <span class="timeline__note">
-          {% if mv.from_machine or mv.to_machine %}
-            {{ mv.from_machine or 'Magazzino' }} &rarr; {{ mv.to_machine or 'Magazzino' }}
+          {% if mv.qty_delta is not none %}{{ '%+d'|format(mv.qty_delta) }} {{ c.unit or 'pz' }}{% if mv.reason %} · {{ mv.reason }}{% endif %}
+          {% elif mv.from_machine or mv.to_machine %}{{ mv.from_machine or 'Magazzino' }} &rarr; {{ mv.to_machine or 'Magazzino' }}
           {% else %}{{ mv.note }}{% endif %}
         </span>
         {% if mv.operator %}<span class="muted">{{ mv.operator.name }}</span>{% endif %}
@@ -73,9 +101,8 @@
       </li>
       {% endfor %}
     </ul>
-    {% else %}
-    <p class="empty">Nessun movimento registrato.</p>
-    {% endif %}
+    {% else %}<p class="empty">Nessun movimento registrato.</p>{% endif %}
   </section>
 </div>
+{% block component_extra %}{% endblock %}
 {% endblock %}

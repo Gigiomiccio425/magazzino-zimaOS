@@ -1,7 +1,8 @@
 """Regole di dominio dell'inventario: asset tag, coerenza stato/macchina, cestino, movimenti."""
+from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
-from ..models import STATUS_IN_USE, STATUS_STOCK, Component, Location, Machine, Movement
+from ..models import STATUS_IN_USE, STATUS_STOCK, Component, Location, Machine, Movement, Project, ProjectItem
 from ..timeutil import utcnow
 from . import audit
 
@@ -72,3 +73,42 @@ def purge(db: Session, obj, signer) -> None:
     snap = audit.snapshot(obj, ["name"])
     audit.record(db, entity_type=entity_name(obj), entity_id=obj.id, action="purge", before=snap, signer=signer)
     db.delete(obj)
+
+
+ACTIVE_PROJECT_STATUSES = ("draft", "building")
+
+
+def available_quantity(db: Session, comp: Component) -> int:
+    """Quantita' meno le prenotazioni dei progetti attivi."""
+    reserved = (
+        db.query(func.coalesce(func.sum(ProjectItem.qty), 0))
+        .join(Project, ProjectItem.project_id == Project.id)
+        .filter(ProjectItem.component_id == comp.id, Project.status.in_(ACTIVE_PROJECT_STATUSES),
+                Project.deleted_at.is_(None))
+        .scalar()
+    ) or 0
+    return (comp.quantity or 0) - reserved if comp.tracking == "quantity" else (comp.quantity or 0)
+
+
+def adjust_quantity(db: Session, comp: Component, delta: int, reason: str, signer, base_url: str,
+                    notify: bool = True, app_name: str = "MAGAZZINO") -> Movement:
+    """Variazione scorta con movimento firmato; evento stock.low solo al passaggio sotto il minimo."""
+    from . import events
+
+    if comp.tracking != "quantity":
+        raise ValueError("Solo gli articoli a quantità hanno una scorta da variare.")
+    before = comp.quantity or 0
+    after = before + delta
+    if after < 0:
+        raise ValueError(f"Quantità insufficiente: disponibili {before}.")
+    comp.quantity = after
+    mv = add_movement(db, comp, signer, "qty", note=f"{before} -> {after}", qty_delta=delta, reason=reason)
+    audit.record(db, entity_type="component", entity_id=comp.id, action="qty",
+                 before={"quantity": before}, after={"quantity": after, "reason": reason}, signer=signer)
+    if comp.min_stock is not None and before >= comp.min_stock > after:
+        events.emit(db, "stock.low", {
+            "title": comp.name, "description": f"Scorta sotto il minimo: {after} {comp.unit or 'pz'} (minimo {comp.min_stock}).",
+            "url_path": f"/components/{comp.id}", "fields": [["Tag", comp.asset_tag or ""]],
+            "operator": getattr(signer, "operator_name", None),
+        }, base_url=base_url, notify=notify, app_name=app_name)
+    return mv

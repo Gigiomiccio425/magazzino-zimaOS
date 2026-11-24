@@ -1,121 +1,161 @@
 {% extends "base.html" %}
 {% set editing = component is not none %}
+{% set c = component %}
 {% block title %}{{ 'Modifica' if editing else 'Nuovo' }} componente &middot; {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifica componente' if editing else 'Nuovo componente' }}{% endblock %}
 
+{% macro val(name, default='') -%}{{ (c[name] if editing and c[name] is not none else default) }}{%- endmacro %}
+
 {% block content %}
-<form method="post"
-      action="{{ '/components/' ~ component.id ~ '/edit' if editing else '/components/new' }}"
-      class="form">
+<form method="post" action="{{ '/components/' ~ c.id ~ '/edit' if editing else '/components/new' }}" class="form" id="component-form">
   {{ csrf_field() }}
 
+  <fieldset class="fieldset fieldset--block">
+    <legend class="field__label">Tipo di articolo</legend>
+    {% for code, label in TRACKING.items() %}
+    <label class="check"><input type="radio" name="tracking" value="{{ code }}" {% if (c.tracking if editing else 'serial') == code %}checked{% endif %}>
+      {{ label }} <span class="muted">{{ '(un pezzo con seriale: GPU, SSD…)' if code == 'serial' else '(scorta: cavi, viti…)' }}</span></label>
+    {% endfor %}
+  </fieldset>
+
   <div class="form__grid">
-    <label class="field">
-      <span class="field__label">Nome *</span>
-      <input type="text" name="name" required class="input" value="{{ component.name if editing else '' }}">
-    </label>
+    <label class="field"><span class="field__label">Nome *</span>
+      <input type="text" name="name" required maxlength="160" class="input" value="{{ val('name') }}"></label>
 
-    <label class="field">
-      <span class="field__label">Codice oggetto</span>
-      <div class="input-scan">
-        <input type="text" name="object_code" class="input mono" value="{{ component.object_code if editing else '' }}">
-        <button type="button" class="btn--scan" data-scan-target="object_code" title="Scansiona">&#128247;</button>
-      </div>
-    </label>
+    <label class="field"><span class="field__label">Categoria</span>
+      <input type="text" name="category" list="cat-list" id="category-input" class="input" value="{{ val('category') }}" autocomplete="off">
+      <datalist id="cat-list">{% for cat in categories %}<option value="{{ cat }}">{% endfor %}</datalist></label>
 
-    <label class="field">
-      <span class="field__label">Categoria</span>
-      <input type="text" name="category" list="cat-list" id="category-input" class="input"
-             value="{{ component.category if editing else '' }}">
-      <datalist id="cat-list">
-        {% for c in categories %}<option value="{{ c }}">{% endfor %}
-      </datalist>
-    </label>
+    <label class="field"><span class="field__label">Codice oggetto</span>
+      <span class="input-scan">
+        <input type="text" name="object_code" class="input mono" autocomplete="off" value="{{ val('object_code') }}">
+        <button type="button" class="btn--scan" data-scan-target="object_code" aria-label="Scansiona codice oggetto">&#128247;</button>
+      </span></label>
 
-    <label class="field">
-      <span class="field__label">Modello</span>
-      <input type="text" name="model" class="input" value="{{ component.model if editing else '' }}">
-    </label>
+    <label class="field"><span class="field__label">Numero seriale</span>
+      <span class="input-scan">
+        <input type="text" name="serial_number" class="input mono" autocomplete="off" value="{{ val('serial_number') }}">
+        <button type="button" class="btn--scan" data-scan-target="serial_number" aria-label="Scansiona seriale">&#128247;</button>
+      </span></label>
 
-    <label class="field">
-      <span class="field__label">Produttore</span>
-      <input type="text" name="manufacturer" class="input" value="{{ component.manufacturer if editing else '' }}">
-    </label>
+    <label class="field"><span class="field__label">Modello</span>
+      <input type="text" name="model" class="input" value="{{ val('model') }}"></label>
 
-    <label class="field">
-      <span class="field__label">Numero seriale</span>
-      <div class="input-scan">
-        <input type="text" name="serial_number" class="input mono" value="{{ component.serial_number if editing else '' }}">
-        <button type="button" class="btn--scan" data-scan-target="serial_number" title="Scansiona">&#128247;</button>
-      </div>
-    </label>
+    <label class="field"><span class="field__label">Produttore</span>
+      <input type="text" name="manufacturer" class="input" value="{{ val('manufacturer') }}"></label>
 
-    <label class="field">
-      <span class="field__label">Quantita</span>
-      <input type="number" name="quantity" min="1" class="input" value="{{ component.quantity if editing else 1 }}">
-    </label>
+    <label class="field" data-tracking="quantity"><span class="field__label">Quantità</span>
+      <input type="number" name="quantity" min="0" inputmode="numeric" class="input" value="{{ val('quantity', 1) }}"></label>
 
-    <label class="field">
-      <span class="field__label">Stato</span>
+    <label class="field" data-tracking="quantity"><span class="field__label">Unità</span>
+      <input type="text" name="unit" maxlength="20" list="unit-list" class="input" value="{{ val('unit', 'pz') }}">
+      <datalist id="unit-list"><option value="pz"><option value="m"><option value="conf"><option value="kg"></datalist></label>
+
+    <label class="field" data-tracking="quantity"><span class="field__label">Scorta minima</span>
+      <input type="number" name="min_stock" min="0" inputmode="numeric" class="input" value="{{ val('min_stock') }}" aria-describedby="help-min">
+      <span class="field__help" id="help-min">Sotto questa soglia compare l'avviso "scorta bassa".</span></label>
+
+    <label class="field"><span class="field__label">Stato</span>
       <select name="status" class="input">
-        {% for key, label in STATUSES.items() %}
-        <option value="{{ key }}" {% if editing and component.status == key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </label>
+        {% for key, label in STATUSES.items() %}<option value="{{ key }}" {% if (c.status if editing else 'stock') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></label>
 
-    <label class="field">
-      <span class="field__label">Macchina (dove e installato)</span>
+    <label class="field"><span class="field__label">Macchina (dove è montato)</span>
       <select name="machine_id" class="input">
         <option value="">— A magazzino —</option>
-        {% for m in machines %}
-        <option value="{{ m.id }}" {% if editing and component.machine_id == m.id %}selected{% endif %}>{{ m.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
+        {% for m in machines %}<option value="{{ m.id }}" {% if editing and c.machine_id == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+      </select></label>
 
-    <label class="field">
-      <span class="field__label">Posizione a magazzino (scaffale/box)</span>
-      <input type="text" name="location" class="input" value="{{ component.location if editing else '' }}">
-    </label>
+    <label class="field"><span class="field__label">Posizione a magazzino</span>
+      <select name="location_id" class="input">
+        <option value="">—</option>
+        {% for id, path in locations %}<option value="{{ id }}" {% if editing and c.location_id == id %}selected{% endif %}>{{ path }}</option>{% endfor %}
+      </select>
+      {% if editing and c.location %}<span class="field__help">Nota storica posizione: {{ c.location }}</span>{% endif %}
+      <input type="hidden" name="location" value="{{ val('location') }}"></label>
+
+    <label class="field"><span class="field__label">Tag (separati da virgola)</span>
+      <input type="text" name="tags" class="input" autocomplete="off" value="{{ c.tags|map(attribute='name')|join(', ') if editing else '' }}"></label>
   </div>
 
+  <fieldset class="attrs" id="typed-fields" aria-live="polite">
+    <legend class="attrs__legend">Caratteristiche <span class="attrs__hint" id="typed-hint">(scegli una categoria)</span></legend>
+    {% for cat, fields in fields_by_category.items() %}
+    <div class="form__grid typed-group" data-category="{{ cat }}" hidden>
+      {% for f in fields %}
+      {% set current = (c.attributes or {}).get(f.key) if editing else none %}
+      <label class="field"><span class="field__label">{{ f.label }}{% if f.unit %} ({{ f.unit }}){% endif %}</span>
+        {% if f.type == 'number' %}
+          <input type="text" inputmode="decimal" name="cf_{{ f.id }}" class="input" value="{{ current if current is not none else '' }}" disabled>
+        {% elif f.type == 'choice' %}
+          <select name="cf_{{ f.id }}" class="input" disabled>
+            <option value="">—</option>
+            {% for ch in f.choices %}<option value="{{ ch }}" {% if current == ch %}selected{% endif %}>{{ ch }}</option>{% endfor %}
+          </select>
+        {% elif f.type == 'bool' %}
+          <input type="checkbox" name="cf_{{ f.id }}" value="1" {% if current %}checked{% endif %} disabled>
+        {% elif f.type == 'date' %}
+          <input type="date" name="cf_{{ f.id }}" class="input" value="{{ current or '' }}" disabled>
+        {% else %}
+          <input type="text" name="cf_{{ f.id }}" class="input" value="{{ current or '' }}" disabled>
+        {% endif %}
+      </label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </fieldset>
+
   <fieldset class="attrs">
-    <legend class="attrs__legend">Attributi specifici
-      <span class="attrs__hint">(es. capacita, tipo memoria, velocita, interfaccia)</span>
-    </legend>
+    <legend class="attrs__legend">Altri attributi <span class="attrs__hint">(liberi)</span></legend>
     <div id="attr-rows">
-      {% if editing and component.attributes %}
-        {% for k, v in component.attributes.items() %}
+      {% if editing and c.attributes %}
+        {% set typed_keys = (fields_by_category.get(c.category) or [])|map(attribute='key')|list %}
+        {% for k, v in c.attributes.items() if k not in typed_keys %}
         <div class="attr-row">
-          <input type="text" name="attr_key" placeholder="Attributo" class="input" value="{{ k }}">
-          <input type="text" name="attr_value" placeholder="Valore" class="input" value="{{ v }}">
-          <button type="button" class="btn btn--x" onclick="this.parentElement.remove()">&times;</button>
+          <input type="text" name="attr_key" placeholder="Attributo" aria-label="Nome attributo" class="input" value="{{ k }}">
+          <input type="text" name="attr_value" placeholder="Valore" aria-label="Valore attributo" class="input" value="{{ v }}">
+          <button type="button" class="btn btn--x" aria-label="Rimuovi attributo">&times;</button>
         </div>
         {% endfor %}
       {% endif %}
     </div>
     <div class="attrs__actions">
       <button type="button" class="btn btn--ghost" id="add-attr">+ Riga</button>
-      <button type="button" class="btn btn--ghost" id="suggest-attr">Attributi suggeriti</button>
     </div>
   </fieldset>
 
-  <label class="field">
-    <span class="field__label">Note</span>
-    <textarea name="notes" rows="3" class="input">{{ component.notes if editing else '' }}</textarea>
-  </label>
+  <details class="panel-details" {% if editing and (c.supplier or c.purchase_date or c.purchase_price or c.warranty_until) %}open{% endif %}>
+    <summary>Acquisto e garanzia</summary>
+    <div class="form__grid">
+      <label class="field"><span class="field__label">Fornitore</span>
+        <input type="text" name="supplier" class="input" value="{{ val('supplier') }}"></label>
+      <label class="field"><span class="field__label">Data acquisto</span>
+        <input type="date" name="purchase_date" class="input" value="{{ c.purchase_date.isoformat() if editing and c.purchase_date else '' }}"></label>
+      <label class="field"><span class="field__label">Prezzo (€)</span>
+        <input type="text" name="purchase_price" inputmode="decimal" class="input" placeholder="49,90"
+               value="{{ '%.2f'|format(c.purchase_price / 100)|replace('.', ',') if editing and c.purchase_price is not none else '' }}"></label>
+      <label class="field"><span class="field__label">Garanzia fino al</span>
+        <input type="date" name="warranty_until" class="input" value="{{ c.warranty_until.isoformat() if editing and c.warranty_until else '' }}"></label>
+      <label class="field"><span class="field__label">Riferimento fattura</span>
+        <input type="text" name="invoice_ref" class="input" value="{{ val('invoice_ref') }}"></label>
+    </div>
+  </details>
+
+  <label class="field"><span class="field__label">Note</span>
+    <textarea name="notes" rows="3" class="input">{{ val('notes') }}</textarea></label>
 
   <div class="form__actions">
     <button type="submit" class="btn btn--red btn--lg">{{ 'Salva modifiche' if editing else 'Crea componente' }}</button>
-    <a href="{{ '/components/' ~ component.id if editing else '/components' }}" class="btn btn--ghost btn--lg">Annulla</a>
+    <a href="{{ '/components/' ~ c.id if editing else '/components' }}" class="btn btn--ghost btn--lg">Annulla</a>
     {% if editing %}<button type="submit" form="delete-form" class="btn btn--danger btn--lg">Elimina</button>{% endif %}
   </div>
 </form>
 {% if editing %}
-<form method="post" action="/components/{{ component.id }}/delete" id="delete-form" hidden
-      data-sign="critical" data-confirm="Spostare questo componente nel cestino?">
+<form method="post" action="/components/{{ c.id }}/delete" id="delete-form" hidden data-sign="critical"
+      data-confirm="Spostare questo componente nel cestino?">
   {{ csrf_field() }}
 </form>
 {% endif %}
 {% endblock %}
+
+{% block scripts %}<script src="/static/js/attrs.js"></script>{% endblock %}
