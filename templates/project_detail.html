@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Progetto{% endblock %}
+
+{% block content %}
+{% set active = p.status in ('draft', 'building') %}
+<div class="detail-head">
+  <div>
+    <h2 class="detail-title">{{ p.name }}</h2>
+    <div class="detail-meta">
+      <span class="tag">{{ STATUSES.get(p.status, p.status) }}</span>
+      {% if p.target_machine %}<span>per <a class="link" href="/machines/{{ p.target_machine.id }}">{{ p.target_machine.name }}</a></span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    {% if active %}
+    <form method="post" action="/projects/{{ p.id }}/complete" data-confirm="Completare la build? I pezzi vengono montati e le scorte scalate.">
+      {{ csrf_field() }}<button type="submit" class="btn btn--red">Completa build</button></form>
+    <form method="post" action="/projects/{{ p.id }}/cancel" data-confirm="Annullare il progetto e rilasciare le prenotazioni?">
+      {{ csrf_field() }}<button type="submit" class="btn btn--outline">Annulla progetto</button></form>
+    {% endif %}
+    <a href="/projects" class="btn btn--ghost">&larr; Progetti</a>
+  </div>
+</div>
+
+<section class="panel">
+  <h2 class="panel__title">Componenti ({{ p.items|length }})</h2>
+  {% if p.items %}
+  <ul class="trash-list">
+    {% for i in p.items %}
+    <li class="trash-item">
+      <a class="link strong" href="/components/{{ i.component_id }}">{{ i.component.name }}</a>
+      <span class="mono muted">{{ i.component.asset_tag }}</span>
+      <span>{{ i.qty }} {{ i.component.unit or 'pz' }}</span>
+      {% if active %}
+      <form method="post" action="/projects/{{ p.id }}/items/{{ i.id }}/remove">
+        {{ csrf_field() }}<button type="submit" class="link-btn">Togli<span class="sr-only"> {{ i.component.name }}</span></button></form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nessun componente prenotato.</p>{% endif %}
+  {% if active and candidates %}
+  <form method="post" action="/projects/{{ p.id }}/items" class="att-upload">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">Aggiungi componente</span>
+      <select name="component_id" required class="input">
+        {% for c in candidates %}<option value="{{ c.id }}">{{ c.asset_tag }} · {{ c.name }}{% if c.tracking == 'quantity' %} ({{ c.quantity }} {{ c.unit or 'pz' }}){% else %} — {{ CSTATUS.get(c.status, c.status) }}{% endif %}</option>{% endfor %}
+      </select></label>
+    <label class="field"><span class="field__label">Quantità (solo scorte)</span>
+      <input type="number" name="qty" min="1" value="1" class="input input--sm"></label>
+    <button type="submit" class="btn btn--black">Prenota</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Progetti &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Progetti e build{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 class="panel__title">Nuovo progetto</h2>
+  <form method="post" action="/projects/new" class="att-upload">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">Nome</span><input type="text" name="name" required maxlength="160" class="input"></label>
+    <label class="field"><span class="field__label">Macchina di destinazione</span>
+      <select name="target_machine_id" class="input"><option value="">—</option>
+        {% for m in machines %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></label>
+    <input type="hidden" name="description" value="">
+    <button type="submit" class="btn btn--red">Crea</button>
+  </form>
+</section>
+<section class="panel">
+  <h2 class="panel__title">Progetti</h2>
+  {% if projects %}
+  <ul class="trash-list">
+    {% for p in projects %}
+    <li class="trash-item">
+      <a class="link strong" href="/projects/{{ p.id }}">{{ p.name }}</a>
+      <span class="tag">{{ STATUSES.get(p.status, p.status) }}</span>
+      <span class="muted">{{ p.items|length }} componenti{% if p.target_machine %} · per {{ p.target_machine.name }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nessun progetto. Un progetto prenota i pezzi per una build: non vengono usati altrove.</p>{% endif %}
+</section>
+{% endblock %}
