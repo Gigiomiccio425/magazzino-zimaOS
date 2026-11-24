@@ -2,7 +2,7 @@
 # GD MAGAZZINO 2.0 — installazione standalone (ZimaOS / Docker Compose)
 # Su Umbrel si usa l'app store "Gigio-dany-appstore" (login Umbrel incluso).
 #
-# Aggiornamenti controllati: la versione e' FISSATA qui sotto (:2.0.1).
+# Aggiornamenti controllati: la versione e' FISSATA qui sotto (:2.0.2).
 # Prima di ogni aggiornamento l'app fa da sola un backup del database
 # in /data/backups/pre-migrazione/.
 #
@@ -12,7 +12,7 @@
 # ============================================================
 services:
   magazzino:
-    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.0.1
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.0.2
     container_name: magazzino
     pull_policy: always
     ports:

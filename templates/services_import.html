@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Importa servizi &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Importa servizi{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 class="panel__title">Da file JSON</h2>
+  <p>Crea in un colpo solo i servizi di un server (per esempio tutte le app di Umbrel) con i loro moduli, collegati a una macchina.</p>
+  <ul>
+    <li>Un servizio che esiste già con lo stesso nome non viene modificato: al massimo viene collegato alla macchina, se non ne ha una.</li>
+    <li>La macchina viene cercata per nome e creata solo se manca.</li>
+    <li>Non viene cancellato niente. Ogni creazione finisce nel registro, firmata da te.</li>
+  </ul>
+  <form method="post" action="/services/import" enctype="multipart/form-data" data-sign="critical"
+        data-confirm="Importare i servizi del file?" class="form form--narrow">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">File (.json)</span>
+      <input type="file" name="file" accept=".json,application/json" class="input"></label>
+    <label class="field"><span class="field__label">Oppure incolla il JSON</span>
+      <textarea name="json" rows="8" class="input mono" aria-describedby="help-json"></textarea>
+      <span class="field__help warn" id="help-json">Non inserire password o token: descrizioni e runbook sono leggibili da tutti gli operatori.</span></label>
+    <div class="form__actions">
+      <button type="submit" class="btn btn--red btn--lg">Importa</button>
+      <a href="/services" class="btn btn--ghost btn--lg">Annulla</a>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Formato</h2>
+<pre class="mono">{
+  "machine": {"name": "main", "kind": "Server", "hostname": "umbrel", "ip_address": "192.168.1.77", "os": "umbrelOS"},
+  "services": [
+    {
+      "name": "Immich",
+      "url": "http://umbrel.local:2283",
+      "status": "operational",
+      "description": "Backup di foto e video",
+      "runbook_md": "## Note\n- …",
+      "modules": [{"name": "server", "kind": "web", "current_version": "v3.4.2", "repo_url": "https://github.com/…"}]
+    }
+  ]
+}</pre>
+  <p class="muted">Stati: {{ SERVICE_STATUSES.keys()|join(", ") }}. Tipi di modulo: {{ MODULE_KINDS.keys()|join(", ") }}.</p>
+</section>
+{% endblock %}

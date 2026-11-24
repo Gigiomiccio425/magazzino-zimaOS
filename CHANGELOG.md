@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.2 — 2026-11
+
+- Servizi: nuova pagina "Importa" per creare in un colpo solo i servizi di un server (per esempio
+  tutte le app di Umbrel) da un file JSON, con moduli e macchina collegata.
+  I servizi già presenti non vengono modificati (al massimo collegati alla macchina se non ne hanno una),
+  la macchina viene creata solo se manca, niente viene cancellato. Richiede la firma per azioni importanti.
+
 ## 2.0.1 — 2026-11
 
 Correzioni dalla revisione della 2.0.0.

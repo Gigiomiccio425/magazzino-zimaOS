@@ -9,7 +9,7 @@ from ..database import get_db
 from ..deps import flash, is_fetch, redirect, render
 from ..models import (CHANGE_TYPES, INCIDENT_STATUSES, MODULE_KINDS, SERVICE_STATUSES, SEVERITIES, Attachment, Change,
                       Incident, Machine, Service, ServiceModule)
-from ..services import audit, events
+from ..services import audit, events, service_import
 from ..services.inventory import alive, soft_delete
 from ..services.links import KIND_LABELS, is_safe_url, links_for, links_from_form, save_links
 from ..services.settings_store import base_url
@@ -77,6 +77,42 @@ def _form_ctx(db: Session, s: Service | None) -> dict:
 @router.get("/services/new")
 def service_new(request: Request, db: Session = Depends(get_db)):
     return render(request, "service_form.html", _form_ctx(db, None))
+
+
+@router.get("/services/import")
+def services_import_page(request: Request):
+    return render(request, "services_import.html", {"MODULE_KINDS": MODULE_KINDS,
+                                                    "SERVICE_STATUSES": SERVICE_STATUSES})
+
+
+@router.post("/services/import")
+async def services_import(request: Request, db: Session = Depends(get_db),
+                          signer: SignerInfo = Depends(require_signer(critical=True))):
+    form = await request.form()
+    upload = form.get("file")
+    raw = await upload.read() if getattr(upload, "filename", "") else (form.get("json") or "")
+    try:
+        data = service_import.parse(raw)
+        report = service_import.apply(db, data, signer, _slug)
+    except service_import.ServiceImportError as exc:
+        db.rollback()
+        return _refuse(request, 422, str(exc), "/services/import")
+    db.commit()
+    parts = [f"{len(report.created)} servizi creati"]
+    if report.linked:
+        parts.append(f"{len(report.linked)} già presenti collegati a {report.machine.name}")
+    if report.skipped:
+        parts.append(f"{len(report.skipped)} già presenti lasciati com'erano")
+    if report.machine_created:
+        parts.append(f"macchina \"{report.machine.name}\" creata ({report.machine.asset_tag})")
+    message = "Import completato: " + ", ".join(parts) + "."
+    if is_fetch(request):
+        return JSONResponse({"ok": True, "message": message, "created": report.created, "linked": report.linked,
+                             "skipped": report.skipped, "warnings": report.warnings})
+    flash(request, message)
+    for w in report.warnings[:5]:  # il cookie di sessione ha spazio limitato
+        flash(request, w[:200], "error")
+    return redirect(request, "/services")
 
 
 @router.get("/services/{sid}/edit")
