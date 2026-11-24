@@ -80,9 +80,13 @@ async def incident_create(request: Request, db: Session = Depends(get_db),
     severity = form.get("severity") if form.get("severity") in SEVERITIES else "SEV3"
     if not title:
         return _refuse(request, 422, "Scrivi un titolo per l'incidente.", "/incidents/new")
+    try:
+        started = parse_local_input(form.get("started_at") or "") or utcnow()
+    except ValueError:
+        return _refuse(request, 422, "Data di inizio non valida.", "/incidents/new")
     services = _services(db, form.getlist("service_ids"))
     inc = Incident(title=title, severity=severity, status="open", summary=(form.get("summary") or "").strip(),
-                   started_at=parse_local_input(form.get("started_at") or "") or utcnow(),
+                   started_at=started,
                    operator_id=signer.operator_id)
     inc.services = services
     db.add(inc)

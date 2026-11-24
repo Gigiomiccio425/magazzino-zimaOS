@@ -5,13 +5,17 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import flash, is_fetch, redirect
-from ..models import Attachment
+from ..models import Attachment, Change, Component, Incident, Service, TestRun
 from ..services import audit, uploads
 from ..services.signing import SignerInfo, require_signer
 
 router = APIRouter()
 ENTITY_URLS = {"component": "/components/{}", "test_run": "/tests/runs/{}", "incident": "/incidents/{}",
                "change": "/changes/{}", "service": "/services/{}"}
+
+
+ENTITY_MODELS = {"component": Component, "test_run": TestRun, "incident": Incident, "change": Change,
+                 "service": Service}
 
 
 def _back(entity_type: str, entity_id: int) -> str:
@@ -25,12 +29,18 @@ async def attachments_upload(request: Request, entity_type: str = Form(""), enti
     back = _back(entity_type, entity_id)
     if entity_type not in ENTITY_URLS or not entity_id:
         return JSONResponse({"error": "invalid", "message": "Destinazione non valida."}, status_code=422)
+    model = ENTITY_MODELS[entity_type]
+    target = db.get(model, entity_id)
+    if target is None or getattr(target, "deleted_at", None) is not None:
+        return JSONResponse({"error": "not_found", "message": "Elemento non trovato."}, status_code=404)
     saved = []
     try:
         for f in files:
             if f.filename:
                 saved.append(uploads.save_upload(request.app.state.settings, db, f, entity_type, entity_id, signer))
     except uploads.UploadRejected as exc:
+        for att in saved:
+            uploads.remove_files(request.app.state.settings, att)
         db.rollback()
         if is_fetch(request):
             return JSONResponse({"error": "rejected", "message": exc.message}, status_code=exc.status)

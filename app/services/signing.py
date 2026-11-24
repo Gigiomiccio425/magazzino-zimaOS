@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import secrets
 import time
+import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
@@ -77,7 +78,7 @@ def verify_password(password: str, stored: str | None) -> bool:
 
 def normalize_name(name: str) -> tuple[str, str]:
     """('Nome Visualizzato', 'chiave casefold'): spazi compressi, maiuscole ignorate nella chiave."""
-    display = " ".join((name or "").split())
+    display = " ".join(unicodedata.normalize("NFC", name or "").split())
     return display, display.casefold()
 
 
@@ -143,14 +144,25 @@ def start_signing_session(request: Request, db: Session, op: Operator, sig: Sign
     return SignerInfo(op.id, op.name, bool(op.is_admin), sig.id, exp)
 
 
+def _server_state(request: Request) -> tuple[set, set]:
+    """Token gia' usati e firme chiuse con "Esci": tenuti in memoria dal server, cosi' ripresentare
+    un cookie vecchio non li riattiva (un solo processo uvicorn)."""
+    state = request.app.state
+    if not hasattr(state, "used_sig_tokens"):
+        state.used_sig_tokens, state.revoked_signatures = set(), set()
+    return state.used_sig_tokens, state.revoked_signatures
+
+
 def end_signing_session(request: Request) -> None:
-    request.session.pop("signer", None)
+    data = request.session.pop("signer", None)
+    if data and data.get("sig") is not None:
+        _server_state(request)[1].add(data["sig"])
 
 
 def session_signer(request: Request) -> dict | None:
     """Dati di sessione ancora validi per la barra in alto (nessuna query DB)."""
     data = request.session.get("signer")
-    if data and data.get("exp", 0) > _now():
+    if data and data.get("exp", 0) > _now() and data.get("sig") not in _server_state(request)[1]:
         return data
     return None
 
@@ -181,8 +193,12 @@ def issue_action_token(request: Request, op: Operator, signature_id: int, action
 
 def consume_action_token(request: Request, db: Session, token: str, action: str) -> SignerInfo | None:
     """Token valido una sola volta, solo per l'azione firmata e entro ACTION_TOKEN_TTL."""
+    used = _server_state(request)[0]
     tokens = dict(request.session.get("sig_tokens", {}))
     data = tokens.pop(token, None)
+    if token in used:
+        return None
+    used.add(token)
     request.session["sig_tokens"] = {k: v for k, v in tokens.items() if v["exp"] > _now()}
     if not data or data["exp"] <= _now() or not hmac.compare_digest(data["action"] or "", action):
         return None

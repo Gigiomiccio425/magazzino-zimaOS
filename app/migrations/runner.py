@@ -101,6 +101,10 @@ def run_migrations(db_path: Path, backups_dir: Path) -> MigrationReport:
         conn = _open(db_path)
         try:
             current = conn.execute("PRAGMA user_version").fetchone()[0]
+            if current > latest:
+                raise MigrationError(
+                    f"Il database (schema v{current}) è di una versione più recente dell'app (v{latest}): "
+                    "aggiorna l'app invece di tornare indietro.")
             if current >= latest:
                 return MigrationReport(current, current, None)
             if not is_new:

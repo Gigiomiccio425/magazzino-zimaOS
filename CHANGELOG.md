@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.1 — 2026-11
+
+Correzioni dalla revisione della 2.0.0.
+- Import CSV: una macchina inesistente ora è un errore in anteprima (prima smontava il pezzo in silenzio);
+  gli attributi restano testo ("007" non diventa 7).
+- Export CSV protetto dalle formule di Excel (celle che iniziano con = + - @).
+- Cambio di stato di massa con la stessa regola della scheda ("In uso" solo se montato).
+- Webhook gestibili solo dagli amministratori.
+- Firma: un token di azione importante non si riusa neanche ripresentando un cookie vecchio; "Esci" non si annulla.
+- Impronta: una credenziale sconosciuta viene sempre rifiutata.
+- Date scritte male, immagini enormi e allegati verso elementi inesistenti: messaggio chiaro invece di errore 500;
+  nessun file orfano se un caricamento viene rifiutato.
+- Nomi operatore con accenti scritti in modi diversi riconosciuti come lo stesso operatore.
+- Un database di una versione più recente dell'app viene rifiutato invece di essere aperto.
+
 ## 2.0.0 — 2026-11
 
 Gestionale e centro di comando completo. I dati della 1.1.x vengono migrati in automatico,

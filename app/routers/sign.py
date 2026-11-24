@@ -232,7 +232,7 @@ def passkey_auth_finish(body: PasskeyFinish, request: Request, db: Session = Dep
         return _error(404, "not_found", "Operatore non trovato.")
     creds = [c for c in op.credentials if c.rp_id == ch["rp_id"]]
     wanted = webauthn_svc.credential_id_of(body.credential)
-    cred = next((c for c in creds if c.credential_id == wanted), creds[0] if len(creds) == 1 else None)
+    cred = next((c for c in creds if c.credential_id == wanted), None)
     if not cred:
         return _error(400, "unknown_credential", "Impronta non riconosciuta per questo operatore.")
     try:

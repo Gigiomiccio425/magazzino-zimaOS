@@ -255,7 +255,10 @@ async def change_create(sid: int, request: Request, db: Session = Depends(get_db
         module = None
     ctype = form.get("type") if form.get("type") in CHANGE_TYPES else "note"
     version = (form.get("version") or "").strip()[:60]
-    when = parse_local_input(form.get("occurred_at") or "") or utcnow()
+    try:
+        when = parse_local_input(form.get("occurred_at") or "") or utcnow()
+    except ValueError:
+        return _refuse(request, 422, "Data non valida.", back)
     ch = Change(service_id=s.id, module_id=module.id if module else None, type=ctype, version=version, title=title,
                 body_md=(form.get("body_md") or "").strip(), occurred_at=when, operator_id=signer.operator_id,
                 signature_id=signer.signature_id)

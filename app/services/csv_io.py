@@ -59,6 +59,11 @@ def _cell(value) -> str:
     return str(value)
 
 
+def _safe(value: str) -> str:
+    """Protezione CSV injection: Excel non deve interpretare il contenuto come formula."""
+    return "'" + value if value.startswith(FORMULA_START) else value
+
+
 def export_components_csv(db: Session) -> str:
     comps = db.query(Component).filter(Component.deleted_at.is_(None)).order_by(Component.id).all()
     attr_keys = sorted({k for c in comps for k in (c.attributes or {})})
@@ -71,7 +76,8 @@ def export_components_csv(db: Session) -> str:
         row["machine"] = c.machine.name if c.machine else ""
         row["purchase_price"] = _price(c.purchase_price)
         row["tags"] = ", ".join(t.name for t in c.tags)
-        w.writerow([row[n] for n in COLUMNS] + [_cell((c.attributes or {}).get(k)) for k in attr_keys])
+        cells = [row[n] for n in COLUMNS] + [_cell((c.attributes or {}).get(k)) for k in attr_keys]
+        w.writerow([_safe(v) for v in cells])
     return "﻿" + buf.getvalue()
 
 
@@ -83,17 +89,24 @@ def _read(text: str) -> tuple[list[str], list[dict]]:
     return [h.strip() for h in (reader.fieldnames or [])], list(reader)
 
 
-def _attr_value(raw: str):
-    raw = raw.strip()
-    if NUMBER_RE.match(raw):
-        n = float(raw.replace(",", "."))
-        return int(n) if n.is_integer() else n
-    return raw
+FORMULA_START = ("=", "+", "-", "@")
+
+
+def _attr_value(raw: str) -> str:
+    """Gli attributi importati restano testo (niente "007" -> 7)."""
+    return raw.strip()
+
+
+def _unescape(value: str) -> str:
+    """Toglie l'apostrofo aggiunto dall'export davanti alle celle che Excel leggerebbe come formula."""
+    if value.startswith("'") and value[1:2] in FORMULA_START:
+        return value[1:]
+    return value
 
 
 def _parse_row(raw: dict, headers: list[str]) -> tuple[dict, list[str]]:
     data, errors = {}, []
-    get = lambda k: (raw.get(k) or "").strip()  # noqa: E731
+    get = lambda k: _unescape((raw.get(k) or "").strip())  # noqa: E731
     for k in TEXT_FIELDS:
         if k in headers:
             data[k] = get(k)
@@ -158,12 +171,12 @@ def _differs(comp: Component, data: dict) -> bool:
 
 def _find(db: Session, raw: dict) -> tuple[Component | None, str | None]:
     alive = db.query(Component).filter(Component.deleted_at.is_(None))
-    tag = (raw.get("asset_tag") or "").strip().upper()
+    tag = _unescape((raw.get("asset_tag") or "").strip()).upper()
     if tag:
         comp = alive.filter(Component.asset_tag == tag).first()
         if comp:
             return comp, tag
-    serial = (raw.get("serial_number") or "").strip()
+    serial = _unescape((raw.get("serial_number") or "").strip())
     if serial:
         hits = alive.filter(Component.serial_number == serial).limit(2).all()
         if len(hits) == 1:
@@ -181,6 +194,9 @@ def plan_import(db: Session, text: str) -> ImportPlan:
             errors.append("Nome obbligatorio per i nuovi componenti")
         if comp is not None and "name" in data and not data["name"]:
             errors.append("Nome vuoto")
+        if data.get("machine") and not db.query(Machine).filter(
+                Machine.name == data["machine"], Machine.deleted_at.is_(None)).first():
+            errors.append(f"Macchina sconosciuta: {data['machine']}")
         if errors:
             action = "error"
         elif comp is None:

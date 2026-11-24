@@ -53,6 +53,16 @@ def _invalid(request: Request, message: str, back: str):
     return redirect(request, back)
 
 
+def _admin_only(request: Request, signer: SignerInfo):
+    if signer.is_admin:
+        return None
+    if is_fetch(request):
+        return JSONResponse({"error": "forbidden", "message": "Solo un amministratore può gestire i webhook."},
+                            status_code=403)
+    flash(request, "Solo un amministratore può gestire i webhook.", "error")
+    return redirect(request, "/webhooks")
+
+
 def _safe_snapshot(hook: Webhook) -> dict:
     snap = audit.snapshot(hook, FIELDS)
     snap["url"] = discord.mask_url(hook.url)
@@ -77,6 +87,8 @@ def webhook_new(request: Request):
 @router.post("/webhooks/new")
 async def webhook_create(request: Request, db: Session = Depends(get_db),
                          signer: SignerInfo = Depends(require_signer(critical=True))):
+    if denied := _admin_only(request, signer):
+        return denied
     data, error = _parse(await request.form())
     if error:
         return _invalid(request, error, "/webhooks/new")
@@ -107,6 +119,8 @@ def webhook_edit(hook_id: int, request: Request, db: Session = Depends(get_db)):
 @router.post("/webhooks/{hook_id}/edit")
 async def webhook_update(hook_id: int, request: Request, db: Session = Depends(get_db),
                          signer: SignerInfo = Depends(require_signer(critical=True))):
+    if denied := _admin_only(request, signer):
+        return denied
     hook = db.get(Webhook, hook_id)
     if not hook:
         return _invalid(request, "Webhook non trovato.", "/webhooks")
@@ -127,6 +141,8 @@ async def webhook_update(hook_id: int, request: Request, db: Session = Depends(g
 @router.post("/webhooks/{hook_id}/delete")
 def webhook_delete(hook_id: int, request: Request, db: Session = Depends(get_db),
                    signer: SignerInfo = Depends(require_signer(critical=True))):
+    if denied := _admin_only(request, signer):
+        return denied
     hook = db.get(Webhook, hook_id)
     if hook:
         audit.record(db, entity_type="webhook", entity_id=hook.id, action="delete", before=_safe_snapshot(hook),

@@ -67,9 +67,10 @@ async def components_bulk(request: Request, db: Session = Depends(get_db),
         if status not in STATUSES:
             return _refuse(request, 422, "Stato non valido.")
         for c in comps:
-            if c.status != status:
-                add_movement(db, c, signer, "status", note=f"Stato: {STATUSES.get(c.status)} -> {STATUSES[status]}")
-                c.status = status
+            _, new_status = normalize_assignment(c.machine_id, status)
+            if c.status != new_status:
+                add_movement(db, c, signer, "status", note=f"Stato: {STATUSES.get(c.status)} -> {STATUSES[new_status]}")
+                c.status = new_status
     elif action == "add_tag":
         name = " ".join((form.get("tag") or "").split()).lower()[:60]
         if not name:

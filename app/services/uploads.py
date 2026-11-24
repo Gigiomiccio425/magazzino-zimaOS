@@ -88,7 +88,7 @@ def save_upload(settings: Settings, db: Session, upload: UploadFile, entity_type
     if mime.startswith("image/"):
         try:
             data, img = _clean_image(data)
-        except (UnidentifiedImageError, OSError) as exc:
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
             raise UploadRejected(415, "Immagine non leggibile.") from exc
         img.thumbnail((THUMB_PX, THUMB_PX))
         thumb_rel = rel_dir / f"{name}_thumb.webp"
@@ -103,6 +103,12 @@ def save_upload(settings: Settings, db: Session, upload: UploadFile, entity_type
     db.add(att)
     db.flush()
     return att
+
+
+def remove_files(settings: Settings, att: Attachment) -> None:
+    """Elimina i file di un allegato non ancora salvato (caricamento annullato)."""
+    for rel in filter(None, [att.path, att.thumb_path]):
+        (settings.uploads_dir / rel).unlink(missing_ok=True)
 
 
 def trash_attachment(settings: Settings, db: Session, att: Attachment, signer) -> None:

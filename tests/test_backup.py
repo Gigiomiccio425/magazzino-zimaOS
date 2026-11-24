@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from app.migrations.runner import LATEST_VERSION
 from app.models import Component, Operator
 from app.services import backup
+from app.version import APP_VERSION
 from tests.fixtures.v111 import build_v111_db
 from tests.helpers import FETCH, critical_post, get_csrf, sign_new
 
@@ -59,7 +60,7 @@ def test_export_zip_contents(settings):
         names = set(z.namelist())
         manifest = json.loads(z.read("manifest.json"))
     assert {"magazzino.db", "manifest.json", "uploads/2026/11/foto.jpg"} <= names
-    assert manifest["schema_version"] == LATEST_VERSION and manifest["app_version"] == "2.0.0"
+    assert manifest["schema_version"] == LATEST_VERSION and manifest["app_version"] == APP_VERSION
 
 
 def test_validate_rejects_bad_inputs(tmp_path):

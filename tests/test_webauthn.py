@@ -10,6 +10,7 @@ from tests.helpers import get_csrf
 
 ORIGIN = "https://mag.example"
 H = {"X-Requested-With": "fetch", "Origin": ORIGIN}
+CRED_ID = "Y3JlZC0x"  # base64url di b"cred-1"
 
 
 @pytest.fixture
@@ -92,7 +93,7 @@ def test_auth_finish_updates_sign_count_and_session(client, db, fake_verify):
     begin = client.post("/sign/passkey/auth/begin", json={"operator_id": op_id, "action": "POST /x"}, headers=H)
     opts = json.loads(begin.json()["options"])
     assert opts["userVerification"] == "required" and len(opts["allowCredentials"]) == 1
-    r = client.post("/sign/passkey/auth/finish", json={"credential": {"id": "x"}}, headers=H)
+    r = client.post("/sign/passkey/auth/finish", json={"credential": {"id": CRED_ID}}, headers=H)
     assert r.status_code == 200 and r.json()["action_token"]
     db.expire_all()
     assert db.query(OperatorCredential).one().sign_count == 1
@@ -103,8 +104,9 @@ def test_challenge_single_use(client, db, fake_verify):
     register(client)
     op_id = db.query(Operator).one().id
     client.post("/sign/passkey/auth/begin", json={"operator_id": op_id}, headers=H)
-    assert client.post("/sign/passkey/auth/finish", json={"credential": {}}, headers=H).status_code == 200
-    assert client.post("/sign/passkey/auth/finish", json={"credential": {}}, headers=H).status_code == 400
+    cred = {"credential": {"id": CRED_ID}}
+    assert client.post("/sign/passkey/auth/finish", json=cred, headers=H).status_code == 200
+    assert client.post("/sign/passkey/auth/finish", json=cred, headers=H).status_code == 400
 
 
 def test_failed_verification_rejected(client, monkeypatch):
