@@ -49,8 +49,12 @@ LATEST_VERSION = max(m.version for m in MIGRATIONS)
 def snapshot_db(src: Path, dest: Path) -> Path:
     """Copia consistente del DB con l'API di backup SQLite (funziona anche in WAL)."""
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(src) as source, sqlite3.connect(dest) as target:
+    source, target = sqlite3.connect(src), sqlite3.connect(dest)
+    try:
         source.backup(target)
+    finally:
+        source.close()
+        target.close()
     return dest
 
 

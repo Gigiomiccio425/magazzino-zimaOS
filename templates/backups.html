@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Backup &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Backup{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 class="panel__title">Esporta</h2>
+  <p>Scarica un archivio con database, allegati e versione. È il backup da conservare fuori dal server.</p>
+  <a href="/backups/export" class="btn btn--red">Scarica backup completo (.zip)</a>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Ripristina</h2>
+  <p>Il ripristino sostituisce tutti i dati attuali. Prima viene salvata una copia dello stato attuale in "pre-ripristino". Un backup di una versione precedente viene aggiornato in automatico.</p>
+  <form method="post" action="/backups/restore" enctype="multipart/form-data" data-sign="critical"
+        data-confirm="Sostituire tutti i dati attuali con il backup scelto?" class="form form--narrow">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">File di backup (.zip o .db)</span>
+      <input type="file" name="file" accept=".zip,.db" class="input"></label>
+    {% if items %}
+    <label class="field"><span class="field__label">Oppure scegli un backup sul server</span>
+      <select name="name" class="input">
+        <option value="">—</option>
+        {% for b in items %}<option value="{{ b.path.name }}">{{ b.kind }} &middot; {{ b.path.name }}</option>{% endfor %}
+      </select></label>
+    {% endif %}
+    <button type="submit" class="btn btn--danger">Ripristina</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Backup sul server</h2>
+  <p>Giornalieri alle 03:00 (ultimi 14) e automatici prima di ogni aggiornamento (ultimi 10).</p>
+  {% if items %}
+  <div class="table-wrap">
+  <table class="table">
+    <caption class="sr-only">Backup disponibili</caption>
+    <thead><tr><th scope="col">Tipo</th><th scope="col">File</th><th scope="col">Dimensione</th><th scope="col">Data</th><th scope="col"></th></tr></thead>
+    <tbody>
+    {% for b in items %}
+      <tr>
+        <td>{{ b.kind }}</td><td class="mono">{{ b.path.name }}</td>
+        <td>{{ (b.size / 1024)|round(1) }} KB</td><td class="mono nowrap">{{ b.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td><a class="link" href="/backups/{{ b.kind }}/{{ b.path.name }}/download">Scarica</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="empty">Nessun backup ancora.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,4 +1,5 @@
 """Entry point FastAPI: factory, lifespan, middleware, routing."""
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,12 +16,13 @@ from .core.headers import SecurityHeadersMiddleware
 from .database import make_engine
 from .deps import flash, is_fetch
 from .migrations.runner import run_migrations
-from .routers import audit_log, auth, components, dashboard, machines, operators, settings, sign, trash
+from .routers import audit_log, auth, backups, components, dashboard, machines, operators, settings, sign, trash
 from .services.signing import SignatureRequired
+from .worker import Worker
 
 log = logging.getLogger("magazzino")
 
-ROUTERS = [auth, dashboard, components, machines, audit_log, sign, operators, trash, settings]
+ROUTERS = [auth, dashboard, components, machines, audit_log, sign, operators, trash, settings, backups]
 
 
 async def _csrf_error(request: Request, _exc: CSRFError):
@@ -48,11 +50,15 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
         report = run_migrations(settings.db_path, settings.backups_dir)
         if report.from_version != report.to_version:
             log.info("Schema DB: v%s -> v%s (backup: %s)", report.from_version, report.to_version, report.backup_path)
-        engine = make_engine(settings.db_path)
-        app.state.engine = engine
+        app.state.engine = make_engine(settings.db_path)
+        stop = asyncio.Event()
+        task = asyncio.create_task(Worker(app).run(stop)) if start_worker else None
         try:
             yield
         finally:
+            stop.set()
+            if task:
+                await task
             app.state.engine.dispose()
 
     app = FastAPI(
