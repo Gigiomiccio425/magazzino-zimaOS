@@ -27,7 +27,7 @@ def qr_image(tag: str, request: Request, db: Session = Depends(get_db)):
     tag = tag.upper()
     if not TAG_RE.match(tag):
         return PlainTextResponse("Codice non valido.", status_code=404)
-    svg = qr_svg(tag_url(base_url(request, db), tag), scale=6)
+    svg = qr_svg(tag_url(base_url(request, db), tag), scale=6, standalone=True)
     return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "private, max-age=3600"})
 
 

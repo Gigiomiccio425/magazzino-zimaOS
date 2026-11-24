@@ -1,4 +1,5 @@
 """QR (segno, offline) e risoluzione delle scansioni: URL /q/TAG, tag nudo, seriale, codice oggetto."""
+import io
 import re
 from urllib.parse import quote, urlparse
 
@@ -12,8 +13,12 @@ _URL_TAG = re.compile(r"/q/([CMLcml]-\d{3,})/?$")
 _MODELS = {"C": (Component, "/components/"), "M": (Machine, "/machines/"), "L": (Location, "/locations/")}
 
 
-def qr_svg(data: str, scale: int = 4) -> str:
-    return segno.make(data, error="m").svg_inline(scale=scale, border=2, dark="#111111", light="#ffffff")
+def qr_svg(data: str, scale: int = 4, standalone: bool = False) -> str:
+    """SVG del QR. standalone=True aggiunge xmlns (file .svg servito come immagine)."""
+    buf = io.BytesIO()
+    segno.make(data, error="m").save(buf, kind="svg", scale=scale, border=2, dark="#111111", light="#ffffff",
+                                     xmldecl=False, svgns=standalone, nl=False)
+    return buf.getvalue().decode("utf-8")
 
 
 def tag_url(base_url: str, tag: str) -> str:

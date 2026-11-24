@@ -657,3 +657,17 @@ select.input { cursor: pointer; }
 .att__del { font-size: 12px; padding: 4px 6px; }
 .att-upload { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
 .att-camera { cursor: pointer; }
+
+/* ---- Scanner (dialog) ---- */
+.scanner-dialog { width: min(520px, calc(100vw - 16px)); }
+.scanner-box { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.scanner-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.scanner-title { font-size: 18px; border-left: 8px solid var(--red); padding-left: 10px; }
+.scanner-view { position: relative; background: var(--black); aspect-ratio: 4 / 3; overflow: hidden; }
+.scanner-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scanner-reticle { position: absolute; inset: 22% 14%; border: 3px solid var(--red); box-shadow: 0 0 0 9999px rgba(0, 0, 0, .35); }
+.scanner-status { margin: 0; font-weight: 700; white-space: pre-line; }
+.scanner-manual { display: flex; gap: 8px; }
+.scanner-manual .input { flex: 1; }
+.scanner-list { max-height: 160px; overflow: auto; margin: 0; padding-left: 22px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+.scanner-actions { display: flex; justify-content: flex-end; }

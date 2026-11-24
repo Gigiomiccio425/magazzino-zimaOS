@@ -57,6 +57,7 @@ def test_q_unknown_404(client, items):
 def test_qr_svg_response(client, items):
     r = client.get("/qr/C-000001.svg")
     assert r.status_code == 200 and r.headers["content-type"].startswith("image/svg+xml")
+    assert 'xmlns="http://www.w3.org/2000/svg"' in r.text  # file SVG autonomo, decodificabile come immagine
     assert client.get("/qr/XYZ.svg").status_code == 404
 
 
