@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Operatori &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Operatori{% endblock %}
+
+{% block content %}
+<p class="lead">Gli operatori si registrano alla prima firma. Le azioni qui sotto sono riservate agli amministratori e chiedono una firma nuova.</p>
+{% if operators %}
+<div class="table-wrap">
+<table class="table">
+  <caption class="sr-only">Elenco operatori</caption>
+  <thead><tr><th scope="col">Nome</th><th scope="col">Ruolo</th><th scope="col">Stato</th><th scope="col">Accesso</th><th scope="col">Azioni</th></tr></thead>
+  <tbody>
+  {% for o in operators %}
+    <tr>
+      <td class="strong">{{ o.name }}</td>
+      <td>{{ 'Amministratore' if o.is_admin else 'Operatore' }}</td>
+      <td>{% if not o.active %}<span class="tag tag--faulty">Disattivato</span>{% elif o.locked_until %}<span class="tag">Bloccato</span>{% else %}<span class="tag tag--in_use">Attivo</span>{% endif %}</td>
+      <td>{{ 'Password' if o.password_hash else '' }}{% if o.password_hash and o.credentials %} + {% endif %}{% if o.credentials %}{{ o.credentials|length }} impronta/e{% endif %}</td>
+      <td class="actions">
+        <form method="post" action="/operators/{{ o.id }}/{{ 'disable' if o.active else 'enable' }}" data-sign="critical">
+          {{ csrf_field() }}
+          <button type="submit" class="btn btn--outline btn--sm">{{ 'Disattiva' if o.active else 'Riattiva' }}</button>
+        </form>
+        <form method="post" action="/operators/{{ o.id }}/toggle-admin" data-sign="critical">
+          {{ csrf_field() }}
+          <button type="submit" class="btn btn--outline btn--sm">{{ 'Togli admin' if o.is_admin else 'Rendi admin' }}</button>
+        </form>
+        {% if o.credentials %}
+        <form method="post" action="/operators/{{ o.id }}/remove-passkeys" data-sign="critical" data-confirm="Rimuovere tutte le impronte di {{ o.name }}?">
+          {{ csrf_field() }}
+          <button type="submit" class="btn btn--outline btn--sm">Rimuovi impronte</button>
+        </form>
+        {% endif %}
+        <form method="post" action="/operators/{{ o.id }}/reset-password" data-sign="critical" class="inline-pw">
+          {{ csrf_field() }}
+          <label class="sr-only" for="pw-{{ o.id }}">Nuova password per {{ o.name }}</label>
+          <input id="pw-{{ o.id }}" type="password" name="password" minlength="6" class="input input--sm" placeholder="Nuova password" autocomplete="new-password">
+          <button type="submit" class="btn btn--black btn--sm">Imposta</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-box"><p>Nessun operatore: il primo si registra alla prima modifica e diventa amministratore.</p></div>
+{% endif %}
+{% endblock %}

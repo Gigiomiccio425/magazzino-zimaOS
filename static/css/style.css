@@ -567,3 +567,12 @@ select.input { cursor: pointer; }
 .sign-error { margin: 0; color: var(--red-dark); font-weight: 700; min-height: 1.2em; }
 .sign-hint { margin: 0; font-size: 14px; }
 .sign-who { margin: 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.actions form { margin: 0; }
+.btn--sm { padding: 6px 10px; font-size: 12px; min-height: 36px; }
+.input--sm { padding: 6px 8px; min-height: 36px; width: 150px; }
+.inline-pw { display: flex; gap: 6px; }
+.lead { max-width: 70ch; }
+.plain-list { padding-left: 18px; }
+.panel__sub { font-size: 15px; margin: 14px 0 6px; }

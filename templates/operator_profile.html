@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Profilo &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Profilo{% endblock %}
+
+{% block content %}
+{% if op %}
+<section class="panel">
+  <h2 class="panel__title">{{ op.name }}</h2>
+  <p>{{ 'Amministratore' if op.is_admin else 'Operatore' }} &middot; registrato il {{ op.created_at|dt }}</p>
+  <h3 class="panel__sub">Impronte / passkey</h3>
+  {% if op.credentials %}
+  <ul class="plain-list">
+    {% for c in op.credentials %}
+    <li><strong>{{ c.rp_id }}</strong> &middot; {{ (c.label or '')[:60] }} &middot; creata {{ c.created_at|dt }}{% if c.last_used_at %} &middot; ultimo uso {{ c.last_used_at|dt }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}<p>Nessuna impronta registrata.</p>{% endif %}
+  <p>Indirizzo attuale: <strong>{{ rp_id }}</strong>. Un'impronta vale solo per l'indirizzo dove è stata registrata.</p>
+  <button type="button" class="btn btn--red" id="profile-add-passkey" hidden>Aggiungi impronta per questo indirizzo</button>
+  <p class="sign-hint" id="profile-passkey-hint">L'impronta richiede HTTPS.</p>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Cambia password</h2>
+  <form method="post" action="/profile/password" data-sign="critical" class="form form--narrow">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">Nuova password (almeno 6 caratteri)</span>
+      <input type="password" name="password" minlength="6" required class="input" autocomplete="new-password"></label>
+    <button type="submit" class="btn btn--black">Aggiorna password</button>
+  </form>
+</section>
+{% else %}
+<div class="empty-box"><p>Nessun operatore firmato su questo dispositivo. Firma una modifica per vedere il tuo profilo.</p></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/profile.js"></script>{% endblock %}

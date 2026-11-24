@@ -79,6 +79,13 @@
 
   MAG.passkey = { register: register, authenticate: authenticate };
 
+  // Registrazione impronta per l'operatore gia' firmato (profilo)
+  MAG.passkeyCreate = function (options) {
+    return navigator.credentials.create({ publicKey: creationOptions(parse(options)) }).then(function (cred) {
+      return MAG.fetchJSON("/sign/passkey/register/finish", { method: "POST", body: { credential: credentialToJSON(cred) } });
+    });
+  };
+
   var btn = document.getElementById("sign-passkey");
   if (btn) {
     btn.addEventListener("click", function () {

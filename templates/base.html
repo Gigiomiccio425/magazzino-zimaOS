@@ -35,6 +35,8 @@
         {% block nav_extra %}{% endblock %}
         <div class="nav__group" role="group" aria-labelledby="nav-g-sys">
           <span class="nav__group-title" id="nav-g-sys">Sistema</span>
+          {{ navlink("/operators", "Operatori") }}
+          {{ navlink("/profile", "Profilo") }}
           {{ navlink("/audit", "Audit log") }}
         </div>
       </nav>
