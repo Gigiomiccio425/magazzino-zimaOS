@@ -8,4 +8,4 @@ class Setting(Base):
     __tablename__ = "settings"
 
     key = Column(String(80), primary_key=True)
-    value = Column(JSON)
+    value = Column(JSON)  # sempre {"v": valore}: evita la conversione numerica di SQLite
