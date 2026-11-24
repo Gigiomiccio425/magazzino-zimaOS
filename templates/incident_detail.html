@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ inc.title }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Incidente #{{ inc.id }}{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h2 class="detail-title">{{ inc.title }}</h2>
+    <div class="detail-meta">
+      <span class="sev sev--{{ inc.severity }}">{{ inc.severity }} · {{ SEVERITIES.get(inc.severity) }}</span>
+      <span class="tag">{{ INCIDENT_STATUSES.get(inc.status, inc.status) }}</span>
+      {% for s in inc.services %}<a class="chip chip--link" href="/services/{{ s.id }}">{{ s.name }}</a>{% endfor %}
+      <span class="muted">dal {{ inc.started_at|dt }}{% if inc.resolved_at %} al {{ inc.resolved_at|dt }}{% endif %}{% if inc.operator %} · aperto da {{ inc.operator.name }}{% endif %}</span>
+    </div>
+  </div>
+  <div class="detail-actions"><a href="/incidents" class="btn btn--ghost">&larr; Incidenti</a></div>
+</div>
+{% if inc.summary %}<p class="notes notes--wide">{{ inc.summary }}</p>{% endif %}
+
+<section class="panel">
+  <h2 class="panel__title">Aggiornamento</h2>
+  <form method="post" action="/incidents/{{ inc.id }}/updates" class="form">
+    {{ csrf_field() }}
+    <div class="form__grid">
+      <label class="field"><span class="field__label">Stato</span>
+        <select name="status" class="input">{% for code, label in INCIDENT_STATUSES.items() %}<option value="{{ code }}" {% if inc.status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span class="field__label">Gravità</span>
+        <select name="severity" class="input">{% for code, label in SEVERITIES.items() %}<option value="{{ code }}" {% if inc.severity == code %}selected{% endif %}>{{ code }} – {{ label }}</option>{% endfor %}</select></label>
+    </div>
+    <label class="field"><span class="field__label">Messaggio</span><textarea name="message" rows="3" class="input"></textarea></label>
+    {% for s in inc.services %}
+    <div class="svc-pick">
+      <span>{{ s.name }}</span>
+      <label class="sr-only" for="ust-{{ s.id }}">Nuovo stato di {{ s.name }}</label>
+      <select id="ust-{{ s.id }}" name="svc_status_{{ s.id }}" class="input input--sm">
+        <option value="">stato invariato ({{ SERVICE_STATUSES.get(s.status) }})</option>
+        {% for code, label in SERVICE_STATUSES.items() if code != s.status %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endfor %}
+    <div class="link-row">
+      <label class="field"><span class="field__label">Link (fix, issue, PR…)</span><input type="url" name="link_url" class="input"></label>
+      <label class="field"><span class="field__label">Titolo link</span><input type="text" name="link_title" class="input"></label>
+    </div>
+    {% with notify_checked=notify_default %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+    <button type="submit" class="btn btn--red">Pubblica aggiornamento</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Cronologia</h2>
+  <ol class="changelog">
+    {% for u in inc.updates %}
+    <li class="changelog__item">
+      <div class="changelog__head"><span class="tag">{{ INCIDENT_STATUSES.get(u.status, u.status) }}</span>
+        <time class="muted">{{ u.created_at|dt }}{% if u.operator %} · {{ u.operator.name }}{% endif %}{% if u.notified %} · pubblicato su Discord{% endif %}</time></div>
+      {% if u.message %}<p class="notes">{{ u.message }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% with link_list=links %}{% include "partials/links.html" %}{% endwith %}
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Analisi (post-mortem)</h2>
+  {% if inc.root_cause %}<p><strong>Causa:</strong> {{ inc.root_cause }}</p>{% endif %}
+  {% if inc.postmortem_md %}<div class="prose">{{ inc.postmortem_md|md }}</div>{% endif %}
+  <details><summary>Modifica analisi</summary>
+    <form method="post" action="/incidents/{{ inc.id }}/postmortem" class="form">
+      {{ csrf_field() }}
+      <label class="field"><span class="field__label">Causa</span><input type="text" name="root_cause" value="{{ inc.root_cause }}" class="input"></label>
+      <label class="field"><span class="field__label">Post-mortem (markdown)</span><textarea name="postmortem_md" rows="8" class="input">{{ inc.postmortem_md }}</textarea></label>
+      <button type="submit" class="btn btn--black">Salva analisi</button>
+    </form>
+  </details>
+</section>
+
+{% if problems %}
+<section class="panel"><h2 class="panel__title">Problemi noti collegati</h2>
+  <ul class="chips-list">{% for p in problems %}<li><a class="chip chip--link" href="/problems/{{ p.id }}">{{ p.title }}</a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% with att_list=attachments, att_type='incident', att_id=inc.id %}{% include "partials/attachments.html" %}{% endwith %}
+{% endblock %}

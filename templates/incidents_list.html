@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Incidenti &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Incidenti{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/incidents/new" class="btn btn--red">+ Apri incidente</a>
+  <a href="/incidents?status=open" class="btn {{ 'btn--black' if status == 'open' else 'btn--outline' }}">Solo aperti</a>
+  <a href="/incidents" class="btn {{ 'btn--black' if not status else 'btn--outline' }}">Tutti</a>
+  <a href="/problems" class="btn btn--outline">Problemi noti</a>
+</div>
+{% if incidents %}
+<ul class="trash-list">
+  {% for i in incidents %}
+  <li class="trash-item incident-row">
+    <span class="sev sev--{{ i.severity }}" title="{{ SEVERITIES.get(i.severity) }}">{{ i.severity }}</span>
+    <a class="link strong" href="/incidents/{{ i.id }}">{{ i.title }}</a>
+    <span class="tag">{{ INCIDENT_STATUSES.get(i.status, i.status) }}</span>
+    <span class="muted">{{ i.services|map(attribute='name')|join(', ') }}</span>
+    <time class="muted">{{ i.started_at|dt }}{% if i.resolved_at %} → {{ i.resolved_at|dt }}{% endif %}</time>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<div class="empty-box"><p>Nessun incidente.</p></div>{% endif %}
+{% endblock %}

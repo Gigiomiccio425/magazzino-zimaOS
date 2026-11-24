@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Apri incidente &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Apri incidente{% endblock %}
+
+{% block content %}
+<form method="post" action="/incidents/new" class="form">
+  {{ csrf_field() }}
+  <div class="form__grid">
+    <label class="field"><span class="field__label">Titolo *</span>
+      <input type="text" name="title" required maxlength="200" class="input" placeholder="Immich non risponde"></label>
+    <label class="field"><span class="field__label">Gravità</span>
+      <select name="severity" class="input">{% for code, label in SEVERITIES.items() %}<option value="{{ code }}" {% if code == 'SEV3' %}selected{% endif %}>{{ code }} – {{ label }}</option>{% endfor %}</select></label>
+    <label class="field"><span class="field__label">Inizio</span>
+      <input type="datetime-local" name="started_at" class="input" aria-describedby="help-start">
+      <span class="field__help" id="help-start">Vuoto = adesso.</span></label>
+  </div>
+  <label class="field"><span class="field__label">Cosa succede</span>
+    <textarea name="summary" rows="3" class="input"></textarea></label>
+  <fieldset class="fieldset fieldset--block">
+    <legend class="field__label">Servizi colpiti e stato da impostare</legend>
+    {% for s in services %}
+    <div class="svc-pick">
+      <label class="check"><input type="checkbox" name="service_ids" value="{{ s.id }}" {% if preselected == s.id %}checked{% endif %}> {{ s.name }}</label>
+      <label class="sr-only" for="st-{{ s.id }}">Nuovo stato di {{ s.name }}</label>
+      <select id="st-{{ s.id }}" name="svc_status_{{ s.id }}" class="input input--sm">
+        <option value="">stato invariato ({{ SERVICE_STATUSES.get(s.status) }})</option>
+        {% for code, label in SERVICE_STATUSES.items() if code != s.status %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    {% else %}<p class="muted">Nessun servizio registrato.</p>{% endfor %}
+  </fieldset>
+  {% with notify_checked=notify_default %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+  <div class="form__actions">
+    <button type="submit" class="btn btn--red btn--lg">Apri incidente</button>
+    <a href="/incidents" class="btn btn--ghost btn--lg">Annulla</a>
+  </div>
+</form>
+{% endblock %}

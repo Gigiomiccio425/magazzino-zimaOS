@@ -717,3 +717,5 @@ select.input { cursor: pointer; }
 .link-chip { display: inline-flex; gap: 6px; align-items: center; border: 2px solid var(--black); padding: 3px 8px; font-size: 13px; background: var(--paper); }
 .link-chip__kind { font-weight: 900; text-transform: uppercase; font-size: 11px; }
 .warn { color: var(--red-dark); font-weight: 700; }
+
+.svc-pick { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; width: 100%; }

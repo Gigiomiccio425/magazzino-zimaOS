@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Problemi noti &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Problemi noti{% endblock %}
+
+{% block content %}
+<div class="toolbar"><a href="/problems/new" class="btn btn--red">+ Problema noto</a><a href="/incidents" class="btn btn--ghost">&larr; Incidenti</a></div>
+{% if problems %}
+<ol class="changelog">
+  {% for p in problems %}
+  <li class="changelog__item">
+    <div class="changelog__head"><span class="tag">{{ PROBLEM_STATUSES.get(p.status, p.status) }}</span>
+      <a class="link strong" href="/problems/{{ p.id }}">{{ p.title }}</a>
+      <span class="muted">{{ p.services|map(attribute='name')|join(', ') }}{% if p.incidents %} · {{ p.incidents|length }} incidenti{% endif %}</span></div>
+    {% if p.workaround_md %}<div class="prose"><strong>Workaround:</strong> {{ p.workaround_md|md }}</div>{% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}<div class="empty-box"><p>Nessun problema noto. Qui finiscono i guasti ricorrenti con la soluzione temporanea.</p></div>{% endif %}
+{% endblock %}

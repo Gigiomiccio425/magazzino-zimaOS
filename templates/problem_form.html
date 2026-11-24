@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set editing = p is not none %}
+{% block title %}Problema noto &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Problema noto' if editing else 'Nuovo problema noto' }}{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ '/problems/' ~ p.id if editing else '/problems/new' }}" class="form">
+  {{ csrf_field() }}
+  <div class="form__grid">
+    <label class="field"><span class="field__label">Titolo *</span><input type="text" name="title" required maxlength="200" class="input" value="{{ p.title if editing else '' }}"></label>
+    <label class="field"><span class="field__label">Stato</span>
+      <select name="status" class="input">{% for code, label in PROBLEM_STATUSES.items() %}<option value="{{ code }}" {% if editing and p.status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <label class="field"><span class="field__label">Descrizione (markdown)</span><textarea name="description_md" rows="4" class="input">{{ p.description_md if editing else '' }}</textarea></label>
+  <label class="field"><span class="field__label">Workaround (markdown)</span><textarea name="workaround_md" rows="4" class="input">{{ p.workaround_md if editing else '' }}</textarea></label>
+  {% set sel_s = p.services|map(attribute='id')|list if editing else [] %}
+  {% set sel_i = p.incidents|map(attribute='id')|list if editing else [] %}
+  <fieldset class="fieldset fieldset--block"><legend class="field__label">Servizi</legend>
+    {% for s in services %}<label class="check"><input type="checkbox" name="service_ids" value="{{ s.id }}" {% if s.id in sel_s %}checked{% endif %}> {{ s.name }}</label>{% endfor %}
+  </fieldset>
+  <fieldset class="fieldset fieldset--block"><legend class="field__label">Incidenti collegati</legend>
+    {% for i in incidents %}<label class="check"><input type="checkbox" name="incident_ids" value="{{ i.id }}" {% if i.id in sel_i %}checked{% endif %}> #{{ i.id }} {{ i.title }}</label>{% endfor %}
+  </fieldset>
+  <div class="form__actions"><button type="submit" class="btn btn--red btn--lg">Salva</button><a href="/problems" class="btn btn--ghost btn--lg">Annulla</a></div>
+</form>
+{% endblock %}
