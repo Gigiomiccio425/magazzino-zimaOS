@@ -7,6 +7,14 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 
 
+@pytest.fixture(autouse=True)
+def fast_scrypt(monkeypatch):
+    """scrypt leggero nei test (il costo e' salvato nell'hash, la verifica resta corretta)."""
+    from app.services import signing
+
+    monkeypatch.setattr(signing, "_SCRYPT", {"n": 2**4, "r": 8, "p": 1, "dklen": 32})
+
+
 @pytest.fixture
 def data_dir(tmp_path) -> Path:
     d = tmp_path / "data"

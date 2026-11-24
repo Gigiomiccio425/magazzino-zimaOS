@@ -8,6 +8,7 @@ from ..deps import flash, redirect, render
 from ..models import STATUS_IN_USE, STATUS_STOCK, Component, Machine
 from ..services import audit
 from ..services.inventory import MACHINE_FIELDS, add_movement, alive, make_tag, soft_delete
+from ..services.locations import location_options
 from ..services.signing import SignerInfo, require_signer
 
 router = APIRouter()
@@ -35,14 +36,19 @@ def list_machines(request: Request, db: Session = Depends(get_db)):
     return render(request, "machines_list.html", {"machines": machines, "counts": counts})
 
 
+def _loc_id(value: str) -> int | None:
+    return int(value) if str(value).isdigit() else None
+
+
 @router.get("/machines/new")
-def new_machine(request: Request):
-    return render(request, "machine_form.html", {"machine": None})
+def new_machine(request: Request, db: Session = Depends(get_db)):
+    return render(request, "machine_form.html", {"machine": None, "locations": location_options(db)})
 
 
 @router.post("/machines/new")
 def create_machine(request: Request, name: str = Form(""), kind: str = Form(""), location: str = Form(""),
-                   description: str = Form(""), db: Session = Depends(get_db),
+                   description: str = Form(""), location_id: str = Form(""), hostname: str = Form(""),
+                   ip_address: str = Form(""), os: str = Form(""), db: Session = Depends(get_db),
                    signer: SignerInfo = Depends(require_signer())):
     name = name.strip()
     if not name:
@@ -51,7 +57,9 @@ def create_machine(request: Request, name: str = Form(""), kind: str = Form(""),
     if _name_taken(db, name):
         flash(request, "Esiste già una macchina con questo nome (controlla anche il cestino).", "error")
         return redirect(request, "/machines/new")
-    m = Machine(name=name, kind=kind.strip(), location=location.strip(), description=description.strip())
+    m = Machine(name=name, kind=kind.strip(), location=location.strip(), description=description.strip(),
+                location_id=_loc_id(location_id), hostname=hostname.strip(), ip_address=ip_address.strip(),
+                os=os.strip())
     db.add(m)
     db.flush()
     m.asset_tag = make_tag("M", m.id)
@@ -80,12 +88,13 @@ def edit_machine(machine_id: int, request: Request, db: Session = Depends(get_db
     if not m:
         flash(request, "Macchina non trovata.", "error")
         return redirect(request, "/machines")
-    return render(request, "machine_form.html", {"machine": m})
+    return render(request, "machine_form.html", {"machine": m, "locations": location_options(db)})
 
 
 @router.post("/machines/{machine_id}/edit")
 def update_machine(machine_id: int, request: Request, name: str = Form(""), kind: str = Form(""),
-                   location: str = Form(""), description: str = Form(""), db: Session = Depends(get_db),
+                   location: str = Form(""), description: str = Form(""), location_id: str = Form(""), hostname: str = Form(""),
+                   ip_address: str = Form(""), os: str = Form(""), db: Session = Depends(get_db),
                    signer: SignerInfo = Depends(require_signer())):
     m = _get_alive(db, machine_id)
     if not m:
@@ -100,6 +109,8 @@ def update_machine(machine_id: int, request: Request, name: str = Form(""), kind
     m.kind = kind.strip()
     m.location = location.strip()
     m.description = description.strip()
+    m.location_id = _loc_id(location_id)
+    m.hostname, m.ip_address, m.os = hostname.strip(), ip_address.strip(), os.strip()
     b, a = audit.changed(before, audit.snapshot(m, MACHINE_FIELDS))
     if a or b:
         audit.record(db, entity_type="machine", entity_id=m.id, action="update", before=b, after=a, signer=signer)

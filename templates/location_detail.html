@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ loc.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Posizione{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h2 class="detail-title">{{ path }}</h2>
+    <div class="detail-meta">
+      <span class="chip">{{ KINDS.get(loc.kind, loc.kind) }}</span>
+      <span class="mono detail-code">{{ loc.asset_tag }}</span>
+      {% if loc.last_audit_at %}<span class="muted">Ultimo inventario {{ loc.last_audit_at|dt }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a href="/locations/{{ loc.id }}/edit" class="btn btn--red">Modifica</a>
+    <a href="/locations/new?parent={{ loc.id }}" class="btn btn--black">+ Sottoposizione</a>
+    {% block location_actions %}{% endblock %}
+    <a href="/locations" class="btn btn--ghost">&larr; Posizioni</a>
+  </div>
+</div>
+{% if loc.notes %}<p class="notes notes--wide">{{ loc.notes }}</p>{% endif %}
+
+{% if children %}
+<section class="panel">
+  <h2 class="panel__title">Contiene</h2>
+  <ul class="chips-list">{% for c in children %}<li><a class="chip chip--link" href="/locations/{{ c.id }}">{{ c.name }}</a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Componenti ({{ items|length }})</h2></div>
+  {% if items %}
+  <div class="table-wrap">
+  <table class="table">
+    <caption class="sr-only">Componenti in questa posizione e nelle sottoposizioni</caption>
+    <thead><tr><th scope="col">Tag</th><th scope="col">Nome</th><th scope="col">Categoria</th><th scope="col">Q.tà</th><th scope="col">Dove</th></tr></thead>
+    <tbody>
+    {% for c in items %}
+      <tr>
+        <td class="mono">{{ c.asset_tag }}</td>
+        <td class="strong"><a class="link" href="/components/{{ c.id }}">{{ c.name }}</a></td>
+        <td>{{ c.category }}</td><td>{{ c.quantity }} {{ c.unit or '' }}</td>
+        <td>{{ paths.get(c.location_id, '') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="empty">Nessun componente.</p>{% endif %}
+</section>
+
+{% if machines %}
+<section class="panel">
+  <h2 class="panel__title">Macchine</h2>
+  <ul class="chips-list">{% for m in machines %}<li><a class="chip chip--link" href="/machines/{{ m.id }}">{{ m.name }}</a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

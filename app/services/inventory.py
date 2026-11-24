@@ -1,7 +1,7 @@
 """Regole di dominio dell'inventario: asset tag, coerenza stato/macchina, cestino, movimenti."""
 from sqlalchemy.orm import Query, Session
 
-from ..models import STATUS_IN_USE, STATUS_STOCK, Component, Machine, Movement
+from ..models import STATUS_IN_USE, STATUS_STOCK, Component, Location, Machine, Movement
 from ..timeutil import utcnow
 from . import audit
 
@@ -33,7 +33,7 @@ def alive(query: Query, model) -> Query:
 
 
 def entity_name(obj) -> str:
-    return {Component: "component", Machine: "machine"}.get(type(obj), type(obj).__name__.lower())
+    return {Component: "component", Machine: "machine", Location: "location"}.get(type(obj), type(obj).__name__.lower())
 
 
 def machine_name(db: Session, machine_id: int | None) -> str:

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import flash, redirect, render
-from ..models import Component, Machine
+from ..models import Component, Location, Machine
 from ..services.inventory import purge, restore
 from ..services.signing import SignerInfo, require_signer
 
@@ -14,6 +14,7 @@ router = APIRouter()
 TRASH_TYPES: dict[str, tuple[type, str]] = {
     "component": (Component, "Componenti"),
     "machine": (Machine, "Macchine"),
+    "location": (Location, "Posizioni"),
 }
 
 

@@ -30,6 +30,23 @@
   </label>
 
   <label class="field">
+    <span class="field__label">Posizione (archivio)</span>
+    <select name="location_id" class="input">
+      <option value="">—</option>
+      {% for id, path in locations %}<option value="{{ id }}" {% if editing and machine.location_id == id %}selected{% endif %}>{{ path }}</option>{% endfor %}
+    </select>
+  </label>
+
+  <div class="grid-3">
+    <label class="field"><span class="field__label">Hostname</span>
+      <input type="text" name="hostname" class="input" autocomplete="off" value="{{ machine.hostname if editing else '' }}"></label>
+    <label class="field"><span class="field__label">Indirizzo IP</span>
+      <input type="text" name="ip_address" class="input" inputmode="decimal" autocomplete="off" value="{{ machine.ip_address if editing else '' }}"></label>
+    <label class="field"><span class="field__label">Sistema operativo</span>
+      <input type="text" name="os" class="input" value="{{ machine.os if editing else '' }}"></label>
+  </div>
+
+  <label class="field">
     <span class="field__label">Descrizione</span>
     <textarea name="description" rows="4" class="input">{{ machine.description if editing else '' }}</textarea>
   </label>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Posizioni &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Posizioni{% endblock %}
+
+{% macro branch(parent_id) %}
+  {% if tree.get(parent_id) %}
+  <ul class="loc-tree" role="{{ 'tree' if parent_id is none else 'group' }}">
+    {% for loc in tree[parent_id] %}
+    <li role="treeitem" aria-expanded="true">
+      <a href="/locations/{{ loc.id }}" class="loc-node">
+        <span class="chip">{{ KINDS.get(loc.kind, loc.kind) }}</span>
+        <span class="strong">{{ loc.name }}</span>
+        <span class="mono muted">{{ loc.asset_tag }}</span>
+        {% if counts.get(loc.id) %}<span class="loc-count">{{ counts[loc.id] }} pezzi</span>{% endif %}
+      </a>
+      {{ branch(loc.id) }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/locations/new" class="btn btn--red">+ Posizione</a>
+</div>
+{% if tree %}
+<section class="panel">{{ branch(none) }}</section>
+{% else %}
+<div class="empty-box"><p>Nessuna posizione. Crea le stanze, poi scaffali e box al loro interno: ognuna avrà il suo QR.</p></div>
+{% endif %}
+{% endblock %}
