@@ -545,3 +545,25 @@ select.input { cursor: pointer; }
 .audit-diff del { color: var(--red-dark); }
 .audit-diff ins { text-decoration: none; font-weight: 700; }
 .pager { display: flex; gap: 10px; margin-top: 16px; }
+
+/* ---- Firma operatori ---- */
+.signer-badge {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  background: var(--black); color: var(--paper); padding: 8px 12px;
+  font-size: 13px; text-transform: uppercase; letter-spacing: .06em; box-shadow: 3px 3px 0 var(--red);
+}
+.link-btn {
+  background: none; border: 0; padding: 4px; min-height: 32px; cursor: pointer;
+  color: inherit; text-decoration: underline; font: inherit; font-weight: 700;
+}
+.signer-badge .link-btn { color: var(--yellow); }
+.sign-dialog { width: min(480px, calc(100vw - 32px)); }
+.sign-ops { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.sign-op { min-height: 44px; }
+.sign-new { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.sign-new .field { flex: 1; min-width: 180px; }
+.sign-step { display: flex; flex-direction: column; gap: 12px; }
+.sign-critical { margin: 0; padding: 8px 12px; background: var(--yellow); font-weight: 800; }
+.sign-error { margin: 0; color: var(--red-dark); font-weight: 700; min-height: 1.2em; }
+.sign-hint { margin: 0; font-size: 14px; }
+.sign-who { margin: 0; }

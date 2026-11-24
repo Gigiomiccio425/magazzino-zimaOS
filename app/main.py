@@ -2,9 +2,10 @@
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -12,19 +13,31 @@ from .config import load_settings
 from .core.csrf import CSRFError, verify_csrf
 from .core.headers import SecurityHeadersMiddleware
 from .database import make_engine
-from .deps import is_fetch
+from .deps import flash, is_fetch
 from .migrations.runner import run_migrations
-from .routers import audit_log, auth, components, dashboard, machines
+from .routers import audit_log, auth, components, dashboard, machines, sign
+from .services.signing import SignatureRequired
 
 log = logging.getLogger("magazzino")
 
-ROUTERS = [auth, dashboard, components, machines, audit_log]
+ROUTERS = [auth, dashboard, components, machines, audit_log, sign]
 
 
 async def _csrf_error(request: Request, _exc: CSRFError):
     if is_fetch(request):
         return JSONResponse({"error": "csrf"}, status_code=403)
     return PlainTextResponse("Richiesta non valida (token CSRF). Ricarica la pagina e riprova.", status_code=403)
+
+
+async def _signature_required(request: Request, exc: SignatureRequired):
+    if is_fetch(request):
+        return JSONResponse({"error": "signature_required", "critical": exc.critical}, status_code=428)
+    flash(request, "Firma richiesta: abilita JavaScript e riprova.", "error")
+    referer = urlparse(request.headers.get("referer", ""))
+    back = referer.path if referer.path and referer.netloc in ("", request.url.netloc) else "/"
+    if referer.query:
+        back += "?" + referer.query
+    return RedirectResponse(url=back, status_code=303)
 
 
 def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True) -> FastAPI:
@@ -48,7 +61,7 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
         redoc_url=None,
         openapi_url=None,
         lifespan=lifespan,
-        exception_handlers={CSRFError: _csrf_error},
+        exception_handlers={CSRFError: _csrf_error, SignatureRequired: _signature_required},
     )
     app.state.settings = settings
     app.state.start_worker = start_worker

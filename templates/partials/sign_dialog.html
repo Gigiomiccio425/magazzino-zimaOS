@@ -1,0 +1,38 @@
+<dialog class="mag-dialog sign-dialog" id="sign-dialog" aria-labelledby="sign-title" aria-describedby="sign-desc">
+  <div class="mag-dialog__box">
+    <h2 class="mag-dialog__title" id="sign-title">Chi firma?</h2>
+    <p class="mag-dialog__msg" id="sign-desc">Ogni modifica è firmata dall'operatore che la esegue.</p>
+    <p class="sign-critical" id="sign-critical" hidden>Azione importante: serve una firma nuova.</p>
+
+    <!-- Passo 1: scelta operatore -->
+    <div class="sign-step" id="sign-step-choose">
+      <div class="sign-ops" id="sign-ops" role="list"></div>
+      <div class="sign-new">
+        <label class="field">
+          <span class="field__label">Nuovo operatore</span>
+          <input type="text" class="input" id="sign-new-name" autocomplete="name" maxlength="80" enterkeyhint="next">
+        </label>
+        <button type="button" class="btn btn--black" id="sign-new-go">Registra &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Passo 2: verifica -->
+    <form class="sign-step" id="sign-step-verify" hidden>
+      <p class="sign-who">Operatore: <strong id="sign-who"></strong>
+        <button type="button" class="link-btn" id="sign-back">cambia</button></p>
+      <p class="sign-hint" id="sign-hint"></p>
+      <div class="sign-passkey" id="sign-passkey-box" hidden>
+        <button type="button" class="btn btn--red btn--block btn--lg" id="sign-passkey">Usa impronta / passkey</button>
+      </div>
+      <label class="field" id="sign-password-field">
+        <span class="field__label" id="sign-password-label">Password</span>
+        <input type="password" class="input" id="sign-password" autocomplete="current-password" minlength="6" enterkeyhint="done">
+      </label>
+      <p class="sign-error" id="sign-error" role="alert" aria-live="assertive"></p>
+      <div class="mag-dialog__actions">
+        <button type="button" class="btn btn--ghost" id="sign-cancel">Annulla</button>
+        <button type="submit" class="btn btn--red" id="sign-submit">Firma</button>
+      </div>
+    </form>
+  </div>
+</dialog>

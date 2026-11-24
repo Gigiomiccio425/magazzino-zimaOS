@@ -51,6 +51,12 @@
                 aria-controls="sidebar" aria-expanded="false">&#9776;</button>
         <h1 class="topbar__title">{% block heading %}{% endblock %}</h1>
         <div class="topbar__bar" aria-hidden="true"></div>
+        {% if signer %}
+        <div class="signer-badge" role="status">
+          <span>Firmato: <strong>{{ signer.name }}</strong></span>
+          <button type="button" class="link-btn" id="signer-logout">Esci</button>
+        </div>
+        {% endif %}
       </header>
 
       <div class="flashes" aria-live="polite" role="status">
@@ -77,9 +83,11 @@
       </div>
     </form>
   </dialog>
+  {% include "partials/sign_dialog.html" %}
   <div class="toasts" id="toasts" aria-live="assertive" role="alert"></div>
 
   <script src="/static/js/app.js"></script>
+  <script src="/static/js/sign.js"></script>
   <script src="/static/js/scanner.js"></script>
   {% block scripts %}{% endblock %}
 </body>

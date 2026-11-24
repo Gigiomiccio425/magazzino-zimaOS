@@ -7,6 +7,7 @@ from markupsafe import Markup
 
 from .core.csrf import get_csrf_token
 from .models import STATUSES
+from .services.signing import session_signer
 from .timeutil import to_local, utcnow
 from .version import APP_VERSION
 
@@ -56,6 +57,7 @@ def render(request: Request, template_name: str, context: dict | None = None, st
     ctx = dict(context or {})
     ctx["APP_NAME"] = request.app.state.settings.app_name
     ctx["flashes"] = request.session.pop("flashes", [])
+    ctx["signer"] = session_signer(request)
     return templates.TemplateResponse(request, template_name, ctx, status_code=status_code)
 
 
