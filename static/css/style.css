@@ -1103,7 +1103,7 @@ h1, h2, h3 { font-weight: 800; font-stretch: 75%; letter-spacing: 0; }
 .pflag__place { font-weight: 900; font-stretch: 62%; font-size: 12pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pflag__title { font-weight: 700; font-size: 5.5pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pflag__tag { font-family: var(--mono); font-size: 5pt; }
-.pflag__wrap { flex-shrink: 0; height: 100%; box-sizing: border-box; border-left: .3mm dashed #141414; border-right: .3mm dashed #141414;
+.pflag__wrap { flex: 1 1 auto; min-width: 0; height: 100%; box-sizing: border-box; border-left: .3mm dashed #141414; border-right: .3mm dashed #141414;
   background: repeating-linear-gradient(-45deg, #ece9e0 0 1.2mm, #fff 1.2mm 2.4mm); display: grid; place-items: center; }
 .pflag__wrap span { font-family: var(--mono); font-size: 5pt; color: #6b675e; }
 .plabel__qr svg, .pqr__qr svg, .pflag__qr svg { display: block; width: 100%; height: 100%; }
@@ -1144,3 +1144,5 @@ input[type="checkbox"], input[type="radio"] { accent-color: #141414; }
 }
 :root[data-theme="dark"] .bulk-bar .btn--red { background: #141414; border-color: #141414; color: var(--yellow); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bulk-bar .btn--red { background: #141414; border-color: #141414; color: var(--yellow); } }
+.print-note { margin: 0; background: var(--yellow-soft); border-left: 4px solid var(--yellow); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 12px; font-size: 14px; }
+.tab--sm { min-height: 36px; font-size: 14px; }

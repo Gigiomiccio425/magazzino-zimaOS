@@ -7,8 +7,11 @@ Nuovo design e zona stampa etichette.
   giallo sicurezza per le azioni principali, rosso solo per guasti e incidenti, titoli stretti,
   codici in monospace. Tema scuro e telefono aggiornati. Font Archivo e DM Mono inclusi nell'app (licenza OFL).
 - Zona stampa (menu "Stampa etichette"): coda con più pezzi insieme; per ognuno si sceglie
-  etichetta 70 × 37 mm, solo QR (30 mm) o bandiera per cavi, e il numero di copie.
-  Anteprima del foglio A4, "parti dalla casella" per riusare fogli già iniziati, linee di taglio,
+  etichetta 70 × 37 mm, solo QR o bandiera per cavi, e il numero di copie.
+- Foglio unico ottimizzato (predefinito): su carta adesiva A4 intera etichette, QR e bandiere
+  finiscono insieme sullo stesso foglio, dal più grande al più piccolo, riempiendo ogni spazio
+  libero con 2 mm per il taglio: meno fogli sprecati. In alternativa, fogli pretagliati per formato
+  con "parti dalla casella" per riusare fogli già iniziati. Anteprima A4, linee di taglio,
   stampa di tutti i fogli in una volta (o "Salva come PDF").
 - Bandiera per cavi: lato A, zona di giro e lato B con QR su entrambe le facce; la zona di giro si
   calcola dal diametro del cavo. I cavi entrano in coda già come bandiera.

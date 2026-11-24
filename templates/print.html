@@ -10,8 +10,8 @@
   </p>
   {% if entries %}
   <div class="toolbar">
-    <a href="/print/sheets?{{ query_for(sheet=none) }}" class="btn btn--red">Stampa tutti i fogli</a>
-    <a href="/print/sheets?{{ query }}" class="btn btn--outline">Solo {{ SHEET_NAMES[opts.sheet]|lower }}</a>
+    <a href="/print/sheets?{{ query_for(sheet=none) }}" class="btn btn--red">Stampa {{ total_pages }} {{ 'foglio' if total_pages == 1 else 'fogli' }}</a>
+    {% if opts.mode == 'separate' %}<a href="/print/sheets?{{ query }}" class="btn btn--outline">Solo {{ SHEET_NAMES[opts.sheet]|lower }}</a>{% endif %}
   </div>
   {% endif %}
 </div>
@@ -68,23 +68,38 @@
   </section>
 
   <section class="print-preview" aria-label="Anteprima di stampa">
+    <div class="tabs" role="tablist" aria-label="Tipo di carta">
+      <a href="/print?{{ query_for(mode='mixed') }}" role="tab" class="tab" aria-selected="{{ 'true' if opts.mode == 'mixed' else 'false' }}">
+        Foglio unico ottimizzato <span class="mono">{{ mixed_pages }} {{ 'foglio' if mixed_pages == 1 else 'fogli' }}</span></a>
+      <a href="/print?{{ query_for(mode='separate') }}" role="tab" class="tab" aria-selected="{{ 'true' if opts.mode == 'separate' else 'false' }}">
+        Fogli pretagliati per formato <span class="mono">{{ separate_pages }} {{ 'foglio' if separate_pages == 1 else 'fogli' }}</span></a>
+    </div>
+    {% if opts.mode == 'mixed' %}
+    <p class="print-note">Carta adesiva A4 intera: etichette, QR e bandiere vengono sistemati insieme sullo stesso foglio,
+      dal più grande al più piccolo, riempiendo ogni spazio libero. Si ritaglia lungo le linee.
+      {% if separate_pages > mixed_pages %}<strong>Risparmi {{ separate_pages - mixed_pages }} {{ 'foglio' if separate_pages - mixed_pages == 1 else 'fogli' }}</strong> rispetto ai fogli separati.{% endif %}</p>
+    {% else %}
     <div class="tabs" role="tablist" aria-label="Formato dei fogli">
       {% for code, name in SHEET_NAMES.items() %}
       {% set n, pages = counts[code] %}
-      <a href="/print?{{ query_for(sheet=code) }}" role="tab" class="tab" aria-selected="{{ 'true' if code == opts.sheet else 'false' }}">
+      <a href="/print?{{ query_for(sheet=code) }}" role="tab" class="tab tab--sm" aria-selected="{{ 'true' if code == opts.sheet else 'false' }}">
         {{ name }} <span class="mono">{{ n }} · {{ pages }} {{ 'foglio' if pages == 1 else 'fogli' }}</span></a>
       {% endfor %}
     </div>
+    {% endif %}
 
     <form method="get" action="/print" class="print-options">
+      <input type="hidden" name="mode" value="{{ opts.mode }}">
       <input type="hidden" name="sheet" value="{{ opts.sheet }}">
-      {% if opts.sheet == 'flag' %}
+      {% if has_flags %}
       <label class="print-options__field">Diametro cavo (mm)
         <input type="number" name="diam" value="{{ opts.diam }}" min="2" max="14" class="input input--sm"></label>
-      <span class="mono muted">giro {{ sheet.wrap|int }} mm · bandiera {{ sheet.cell_w|int }} mm · {{ sheet.cols }} per riga</span>
+      <span class="mono muted">giro {{ wrap_mm }} mm · bandiera {{ flag_mm|int }} mm</span>
       {% else %}<input type="hidden" name="diam" value="{{ opts.diam }}">{% endif %}
+      {% if opts.mode == 'separate' %}
       <label class="print-options__field">Parti dalla casella
         <input type="number" name="start" value="{{ opts.start }}" min="1" max="{{ sheet.per_page }}" class="input input--sm"></label>
+      {% else %}<input type="hidden" name="start" value="{{ opts.start }}">{% endif %}
       <input type="hidden" name="cuts" value="0">
       <label class="check"><input type="checkbox" name="cuts" value="1" {% if opts.cuts %}checked{% endif %}> Linee di taglio</label>
       <button type="submit" class="btn btn--sm btn--outline">Aggiorna anteprima</button>
@@ -93,11 +108,12 @@
     {% if preview %}
     <div class="sheet-stage">
       <div class="sheet-scale">
-        {% with page=preview, fmt=opts.sheet, cuts=opts.cuts, sheet=sheet %}{% include "partials/print_sheet.html" %}{% endwith %}
+        {% with page=preview, cuts=opts.cuts %}{% include "partials/print_sheet.html" %}{% endwith %}
       </div>
     </div>
-    <p class="muted small">Primo foglio a metà della grandezza reale. "Parti dalla casella" salta le etichette già usate di un foglio iniziato.
-      {% if opts.sheet == 'flag' %}La zona tratteggiata si avvolge attorno al cavo, poi i due lati si chiudono uno sull'altro.{% endif %}</p>
+    <p class="muted small">Primo foglio a metà della grandezza reale.
+      {% if opts.mode == 'separate' %}"Parti dalla casella" salta le etichette già usate di un foglio iniziato.{% endif %}
+      {% if has_flags %}Bandiere: la zona tratteggiata si avvolge attorno al cavo, poi i due lati si chiudono uno sull'altro.{% endif %}</p>
     {% else %}
     <div class="empty-box"><p>Nessun elemento in questo formato.</p></div>
     {% endif %}

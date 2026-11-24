@@ -97,11 +97,13 @@ def test_deleted_items_skipped(client, db, parts):
 def test_print_pages_render(client, db, parts):
     assert "La coda è vuota" in client.get("/print").text
     client.post("/print/add", data={"entity_type": "component", "ids": [str(p.id) for p in parts]}, headers=FETCH)
-    html = client.get("/print?sheet=flag&diam=8").text
+    assert "Foglio unico ottimizzato" in client.get("/print").text
+    html = client.get("/print?mode=separate&sheet=flag&diam=8").text
     assert "Bandiere per cavi" in html and "giro 29 mm" in html and "pflag__wrap" in html
-    sheets = client.get("/print/sheets").text
-    assert sheets.count('class="sheet sheet--') == 2  # un foglio etichette + un foglio bandiere
-    assert "C-000002" in sheets and "<svg" in sheets
+    sheets = client.get("/print/sheets").text  # predefinito: foglio unico ottimizzato
+    assert sheets.count('class="sheet sheet--cuts"') == 1 and "C-000002" in sheets and "<svg" in sheets
+    separate = client.get("/print/sheets?mode=separate").text
+    assert separate.count('class="sheet sheet--cuts"') == 2  # un foglio etichette + un foglio bandiere
 
 
 def test_next_param_cannot_redirect_offsite(client, db, parts):
@@ -113,3 +115,40 @@ def test_next_param_cannot_redirect_offsite(client, db, parts):
 def test_menu_shows_queue_count(client, db, parts):
     client.post("/print/add", data={"entity_type": "component", "ids": [str(p.id) for p in parts]}, headers=FETCH)
     assert 'class="nav__count">3<' in client.get("/components").text
+
+
+def _entry(fmt, copies, n=1):
+    return printing.Entry(n, "component", n, f"C-{n:06d}", "Pezzo", "A-01", "", fmt, copies)
+
+
+def _overlap(a, b):
+    return a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h
+
+
+def test_pack_mixed_fits_page_without_overlaps():
+    entries = [_entry("label", 10, 1), _entry("qr", 12, 2), _entry("flag", 9, 3)]
+    pages = printing.pack(entries, 6)
+    placed = [pl for page in pages for pl in page]
+    assert len(placed) == 31  # tutte le copie
+    for page in pages:
+        for pl in page:
+            assert pl.x >= printing.MIX_MARGIN and pl.y >= printing.MIX_MARGIN
+            assert pl.x + pl.w <= printing.A4_W - printing.MIX_MARGIN + 1e-6
+            assert pl.y + pl.h <= printing.A4_H - printing.MIX_MARGIN + 1e-6
+        for i, a in enumerate(page):
+            assert not any(_overlap(a, b) for b in page[i + 1:])
+    assert len(pages) < printing.separate_page_count(entries, 6)  # 3 fogli separati -> meno con il misto
+
+
+def test_pack_fills_gaps_next_to_labels_with_qr():
+    pages = printing.pack([_entry("label", 2, 1), _entry("qr", 1, 2)], 6)
+    assert len(pages) == 1
+    label_row = {round(pl.y, 2) for pl in pages[0] if pl.format == "label"}
+    qr = next(pl for pl in pages[0] if pl.format == "qr")
+    assert round(qr.y, 2) in label_row  # il QR entra nel resto della riga delle etichette
+
+
+def test_pack_many_copies_spill_to_new_pages():
+    pages = printing.pack([_entry("label", 50, 1)], 6)
+    per_page = len(pages[0])
+    assert per_page == 14 and len(pages) == 4  # 2 per riga x 7 righe con bordi e spazi di taglio

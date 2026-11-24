@@ -169,3 +169,80 @@ def page_counts(entries: list[Entry], diameter: int = DIAM_DEFAULT, start: int =
         n = sum(e.copies for e in entries if e.format == fmt)
         out[fmt] = (n, len(layout(entries, fmt, diameter, start).pages))
     return out
+
+
+# ---------------------------------------------------------------------------
+# Foglio unico ottimizzato: tutti i formati insieme su carta adesiva A4 intera.
+# ---------------------------------------------------------------------------
+MIX_MARGIN = 6.0  # bordo che quasi tutte le stampanti non riescono a stampare
+MIX_GAP = 2.0     # spazio fra un pezzo e l'altro per ritagliare
+QR_CELL = (30.0, 34.0)
+LABEL_CELL = (70.0, 37.0)
+
+
+@dataclass
+class Placement:
+    entry: Entry
+    format: str
+    x: float
+    y: float
+    w: float
+    h: float
+
+    @property
+    def style(self) -> str:
+        return f"left:{self.x:.2f}mm;top:{self.y:.2f}mm;width:{self.w:.2f}mm;height:{self.h:.2f}mm"
+
+
+def cell_size(fmt: str, diameter: int = DIAM_DEFAULT) -> tuple[float, float]:
+    if fmt == "qr":
+        return QR_CELL
+    if fmt == "flag":
+        return 2 * FLAG_SIDE + wrap_length(diameter), FLAG_H
+    return LABEL_CELL
+
+
+def pack(entries: list[Entry], diameter: int = DIAM_DEFAULT) -> list[list[Placement]]:
+    """Impagina tutte le copie su fogli A4 a righe ("scaffali"), dal pezzo più alto al più basso.
+
+    Ogni pezzo va nel primo spazio libero di qualsiasi foglio già aperto (anche nel resto di una
+    riga di etichette ci entra un QR), così i fogli sono il meno possibile.
+    """
+    usable_w, usable_h = A4_W - 2 * MIX_MARGIN, A4_H - 2 * MIX_MARGIN
+    items = []
+    for order, e in enumerate(entries):
+        w, h = cell_size(e.format, diameter)
+        items += [(h, w, order, e)] * e.copies
+    items.sort(key=lambda it: (-it[0], -it[1], it[2]))
+
+    pages: list[dict] = []  # {"shelves": [[y, h, used_w]], "used_h": float, "items": [...]}
+    for h, w, _order, e in items:
+        if w > usable_w:
+            continue  # più largo del foglio (non succede con i diametri ammessi)
+        placed = False
+        for page in pages:
+            for shelf in page["shelves"]:
+                gap = MIX_GAP if shelf[2] else 0.0
+                if h <= shelf[1] and shelf[2] + gap + w <= usable_w:
+                    page["items"].append(Placement(e, e.format, MIX_MARGIN + shelf[2] + gap, MIX_MARGIN + shelf[0], w, h))
+                    shelf[2] += gap + w
+                    placed = True
+                    break
+            if placed:
+                break
+            gap = MIX_GAP if page["shelves"] else 0.0
+            if page["used_h"] + gap + h <= usable_h:
+                y = page["used_h"] + gap
+                page["shelves"].append([y, h, w])
+                page["used_h"] = y + h
+                page["items"].append(Placement(e, e.format, MIX_MARGIN, MIX_MARGIN + y, w, h))
+                placed = True
+                break
+        if not placed:
+            pages.append({"shelves": [[0.0, h, w]], "used_h": h,
+                          "items": [Placement(e, e.format, MIX_MARGIN, MIX_MARGIN, w, h)]})
+    return [p["items"] for p in pages]
+
+
+def separate_page_count(entries: list[Entry], diameter: int = DIAM_DEFAULT) -> int:
+    return sum(len(layout(entries, fmt, diameter).pages) for fmt in FORMATS)

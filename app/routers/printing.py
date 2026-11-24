@@ -22,6 +22,7 @@ def _options(params) -> dict:
     sheet = params.get("sheet") if params.get("sheet") in printing.FORMATS else None
     start = params.get("start") or "1"
     return {
+        "mode": "separate" if params.get("mode") == "separate" else "mixed",
         "sheet": sheet,
         "diam": printing.clamp_diameter(params.get("diam")),
         "start": max(1, int(start)) if str(start).isdigit() else 1,
@@ -31,7 +32,7 @@ def _options(params) -> dict:
 
 def _query(opts: dict, **changes) -> str:
     data = {**opts, **changes}
-    return urlencode({"sheet": data["sheet"] or "", "diam": data["diam"], "start": data["start"],
+    return urlencode({"mode": data["mode"], "sheet": data["sheet"] or "", "diam": data["diam"], "start": data["start"],
                       "cuts": "1" if data["cuts"] else "0"})
 
 
@@ -43,18 +44,27 @@ def _back(form, default: str = "/print") -> str:
     return target
 
 
-def _with_qr(request: Request, db: Session, sheet: printing.Sheet) -> list[list[dict | None]]:
+def _slots(request: Request, db: Session, pages: list[list[tuple]]) -> list[list[dict]]:
+    """Ogni pagina: lista di (entry o None, formato, stile css) -> dict per il template, con il QR."""
     base = base_url(request, db)
     cache: dict[str, str] = {}
-    pages = []
-    for page in sheet.pages:
+    out = []
+    for page in pages:
         slots = []
-        for i, e in enumerate(page):
+        for e, fmt, style in page:
             if e is not None and e.tag not in cache:
                 cache[e.tag] = qr_svg(tag_url(base, e.tag), scale=4)
-            slots.append({"entry": e, "svg": cache.get(e.tag) if e else None, "style": sheet.slot_style(i)})
-        pages.append(slots)
-    return pages
+            slots.append({"entry": e, "fmt": fmt, "svg": cache.get(e.tag) if e else None, "style": style})
+        out.append(slots)
+    return out
+
+
+def _grid_pages(sheet: printing.Sheet) -> list[list[tuple]]:
+    return [[(e, sheet.format, sheet.slot_style(i)) for i, e in enumerate(page)] for page in sheet.pages]
+
+
+def _mixed_pages(entries, diameter: int) -> list[list[tuple]]:
+    return [[(pl.entry, pl.format, pl.style) for pl in page] for page in printing.pack(entries, diameter)]
 
 
 @router.get("/print")
@@ -62,14 +72,22 @@ def print_page(request: Request, db: Session = Depends(get_db)):
     opts = _options(request.query_params)
     entries = printing.queue_entries(db)
     counts = printing.page_counts(entries, opts["diam"], opts["start"])
+    separate_pages = sum(p for _, p in counts.values())
     if opts["sheet"] is None:  # primo formato con qualcosa da stampare
         opts["sheet"] = next((f for f in printing.FORMATS if counts[f][0]), "label")
     sheet = printing.layout(entries, opts["sheet"], opts["diam"], opts["start"])
-    pages = _with_qr(request, db, sheet)
+    mixed = _mixed_pages(entries, opts["diam"])
+    if opts["mode"] == "mixed":
+        pages, total_pages = _slots(request, db, mixed[:1]), len(mixed)
+    else:
+        pages, total_pages = _slots(request, db, _grid_pages(sheet)[:1]), separate_pages
+    has_flags = any(e.format == "flag" for e in entries)
     return render(request, "print.html", {
         "entries": entries, "counts": counts, "opts": opts, "sheet": sheet, "preview": pages[0] if pages else None,
         "FORMATS": printing.FORMATS, "SHEET_NAMES": printing.SHEET_NAMES,
-        "total_copies": sum(e.copies for e in entries), "total_pages": sum(p for _, p in counts.values()),
+        "total_copies": sum(e.copies for e in entries), "total_pages": total_pages,
+        "mixed_pages": len(mixed), "separate_pages": separate_pages, "has_flags": has_flags,
+        "wrap_mm": printing.wrap_length(opts["diam"]), "flag_mm": printing.cell_size("flag", opts["diam"])[0],
         "query": _query(opts), "query_for": lambda **kw: _query(opts, **kw),
         "self_url": f"/print?{_query(opts)}",
     })
@@ -80,14 +98,14 @@ def print_sheets(request: Request, db: Session = Depends(get_db)):
     """Documento da stampare: un foglio A4 per pagina, misure reali in millimetri."""
     opts = _options(request.query_params)
     entries = printing.queue_entries(db)
-    formats = [opts["sheet"]] if opts["sheet"] else list(printing.FORMATS)
-    sheets = []
-    for fmt in formats:
-        sheet = printing.layout(entries, fmt, opts["diam"], opts["start"])
-        if sheet.pages:
-            sheets.append({"sheet": sheet, "pages": _with_qr(request, db, sheet), "name": printing.SHEET_NAMES[fmt]})
-    return render(request, "print_sheets.html", {"sheets": sheets, "opts": opts,
-                                                 "back": f"/print?{_query(opts)}"})
+    if opts["mode"] == "mixed":
+        pages = _slots(request, db, _mixed_pages(entries, opts["diam"]))
+    else:
+        formats = [opts["sheet"]] if opts["sheet"] else list(printing.FORMATS)
+        pages = []
+        for fmt in formats:
+            pages += _slots(request, db, _grid_pages(printing.layout(entries, fmt, opts["diam"], opts["start"])))
+    return render(request, "print_sheets.html", {"pages": pages, "opts": opts, "back": f"/print?{_query(opts)}"})
 
 
 @router.post("/print/add")
