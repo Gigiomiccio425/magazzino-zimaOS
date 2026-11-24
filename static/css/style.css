@@ -682,3 +682,6 @@ select.input { cursor: pointer; }
 .test-result--fail { background: var(--red); color: #fff; }
 .test-result--partial { background: var(--yellow); color: var(--black); }
 .test-result--inconclusive { background: var(--paper-2); color: var(--black); }
+
+.audit-scan { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.audit-last { margin: 0; font-weight: 800; width: 100%; }

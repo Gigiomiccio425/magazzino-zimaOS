@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Inventari &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Inventari fisici{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 class="panel__title">Nuovo inventario</h2>
+  <p>Scegli una posizione: compare l'elenco di cosa dovrebbe esserci, poi scansioni le etichette.</p>
+  <form method="post" action="/audits/new" class="att-upload">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">Posizione</span>
+      <select name="location_id" required class="input">
+        <option value="">—</option>{% for id, p in locations %}<option value="{{ id }}">{{ p }}</option>{% endfor %}
+      </select></label>
+    <label class="check"><input type="checkbox" name="include_children" value="1" checked> Includi sottoposizioni</label>
+    <button type="submit" class="btn btn--red">Inizia</button>
+  </form>
+</section>
+
+<section class="panel" id="overdue">
+  <h2 class="panel__title">Da verificare ({{ overdue|length }})</h2>
+  <p class="muted">Mai verificate o non verificate negli ultimi {{ interval }} giorni.</p>
+  {% if overdue %}
+  <ul class="chips-list">{% for loc in overdue %}<li><a class="chip chip--link" href="/locations/{{ loc.id }}">{{ paths.get(loc.id, loc.name) }}</a></li>{% endfor %}</ul>
+  {% else %}<p class="empty">Tutto verificato.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Storico</h2>
+  {% if audits %}
+  <ul class="timeline">
+    {% for a in audits %}
+    <li class="timeline__item">
+      <span class="tag">{{ 'Aperto' if a.status == 'open' else 'Chiuso' }}</span>
+      <a class="timeline__name" href="/audits/{{ a.id }}">{{ paths.get(a.location_id, '') }}</a>
+      <span class="timeline__note">{% if a.summary %}{{ a.summary.found }} trovati · {{ a.summary.missing }} mancanti · {{ a.summary.unexpected }} fuori posto{% endif %}</span>
+      <time class="timeline__time">{{ a.started_at|dt }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Nessun inventario.</p>{% endif %}
+</section>
+{% endblock %}

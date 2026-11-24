@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Inventario {{ path }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Inventario{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div>
+    <h2 class="detail-title">{{ path }}</h2>
+    <div class="detail-meta">
+      <span class="tag">{{ 'Aperto' if a.status == 'open' else 'Chiuso' }}</span>
+      <span class="muted">iniziato {{ a.started_at|dt }}{% if a.finished_at %} · chiuso {{ a.finished_at|dt }}{% endif %}</span>
+    </div>
+  </div>
+  <div class="detail-actions"><a href="/audits" class="btn btn--ghost">&larr; Inventari</a></div>
+</div>
+
+{% if a.status == 'open' %}
+<section class="panel audit-scan" data-audit-id="{{ a.id }}">
+  <button type="button" class="btn btn--red btn--lg" id="audit-scan-btn">&#128247; Scansiona etichette</button>
+  <form class="scanner-manual" id="audit-manual" data-nosign>
+    <label class="sr-only" for="audit-code">Codice</label>
+    <input id="audit-code" class="input" placeholder="…oppure scrivi tag / seriale" autocomplete="off" enterkeyhint="go">
+    <button type="submit" class="btn btn--black">Segna</button>
+  </form>
+  <p class="audit-last" id="audit-last" aria-live="polite"></p>
+</section>
+{% endif %}
+
+<div class="grid-2">
+  {% for state, label in STATES.items() %}
+  {% if groups[state] or state in ('expected', 'found') %}
+  <section class="panel">
+    <h2 class="panel__title">{{ label }} ({{ groups[state]|length }})</h2>
+    <ul class="trash-list">
+      {% for i in groups[state] %}
+      <li class="trash-item">
+        <a class="link strong" href="/components/{{ i.component_id }}">{{ i.component.name }}</a>
+        <span class="mono muted">{{ i.component.asset_tag }}</span>
+        {% if state == 'unexpected' and a.status == 'open' %}
+        <form method="post" action="/audits/{{ a.id }}/items/{{ i.id }}/move-here">
+          {{ csrf_field() }}<button type="submit" class="btn btn--black btn--sm">Sposta qui</button></form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  {% endfor %}
+</div>
+
+{% if a.status == 'open' %}
+<form method="post" action="/audits/{{ a.id }}/finish" class="form__actions" data-confirm="Chiudere l'inventario? Gli elementi non scansionati diventano mancanti.">
+  {{ csrf_field() }}
+  {% with notify_checked=notify_default %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+  <button type="submit" class="btn btn--red btn--lg">Chiudi inventario</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/audit.js"></script>{% endblock %}
