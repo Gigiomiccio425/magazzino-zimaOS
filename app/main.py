@@ -15,12 +15,12 @@ from .core.headers import SecurityHeadersMiddleware
 from .database import make_engine
 from .deps import flash, is_fetch
 from .migrations.runner import run_migrations
-from .routers import audit_log, auth, components, dashboard, machines, operators, sign, trash
+from .routers import audit_log, auth, components, dashboard, machines, operators, settings, sign, trash
 from .services.signing import SignatureRequired
 
 log = logging.getLogger("magazzino")
 
-ROUTERS = [auth, dashboard, components, machines, audit_log, sign, operators, trash]
+ROUTERS = [auth, dashboard, components, machines, audit_log, sign, operators, trash, settings]
 
 
 async def _csrf_error(request: Request, _exc: CSRFError):

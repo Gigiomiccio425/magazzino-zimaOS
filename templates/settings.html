@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Impostazioni &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Impostazioni{% endblock %}
+
+{% block content %}
+<form method="post" action="/settings" class="form form--narrow" data-sign="critical">
+  {{ csrf_field() }}
+  <label class="field">
+    <span class="field__label">Finestra di firma (minuti)</span>
+    <input type="number" name="signature_window_min" min="0" max="60" required class="input"
+           value="{{ values.signature_window_min }}" aria-describedby="help-window">
+    <span class="field__help" id="help-window">Dopo una firma il dispositivo resta firmato per questo tempo. 0 = firma a ogni modifica.</span>
+  </label>
+  <label class="field">
+    <span class="field__label">Intervallo inventario fisico (giorni)</span>
+    <input type="number" name="audit_interval_days" min="1" max="3650" required class="input"
+           value="{{ values.audit_interval_days }}" aria-describedby="help-audit">
+    <span class="field__help" id="help-audit">Le posizioni non verificate da più tempo compaiono come "da verificare".</span>
+  </label>
+  <label class="field">
+    <span class="field__label">URL pubblico dell'app</span>
+    <input type="url" name="public_base_url" class="input" placeholder="https://..." inputmode="url"
+           value="{{ values.public_base_url }}" aria-describedby="help-url">
+    <span class="field__help" id="help-url">Usato nei QR delle etichette e nei link degli avvisi Discord. Vuoto = indirizzo da cui stai navigando.</span>
+  </label>
+  <div class="form__actions">
+    <button type="submit" class="btn btn--red btn--lg">Salva</button>
+  </div>
+</form>
+{% endblock %}

@@ -16,7 +16,8 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Operator, Setting, Signature
+from ..models import Operator, Signature
+from .settings_store import get_setting
 
 LOCK_AFTER = 5
 LOCK_MINUTES = 15
@@ -116,10 +117,9 @@ def register_success(db: Session, op: Operator) -> None:
 # ---- sessione di firma ----
 
 def window_minutes(db: Session) -> int:
-    row = db.get(Setting, "signature_window_min")
     try:
-        return int((row.value or {}).get("v", DEFAULT_WINDOW_MIN)) if row else DEFAULT_WINDOW_MIN
-    except (TypeError, ValueError, AttributeError):
+        return int(get_setting(db, "signature_window_min"))
+    except (TypeError, ValueError):
         return DEFAULT_WINDOW_MIN
 
 
