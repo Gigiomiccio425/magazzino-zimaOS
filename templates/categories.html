@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Categorie &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Categorie{% endblock %}
+
+{% block content %}
+<p class="lead">Ogni categoria ha i suoi campi (es. VRAM per le GPU, lunghezza per i cavi): compaiono nel form del componente e come filtri nella lista.</p>
+<div class="table-wrap">
+<table class="table">
+  <caption class="sr-only">Categorie</caption>
+  <thead><tr><th scope="col">Categoria</th><th scope="col">Campi</th><th scope="col">Componenti</th><th scope="col"></th></tr></thead>
+  <tbody>
+  {% for cat in categories %}
+    <tr>
+      <td class="strong">{{ cat.name }}</td>
+      <td>{{ cat.fields|selectattr('active')|list|length }}</td>
+      <td>{{ counts.get(cat.name, 0) }}</td>
+      <td><a class="link" href="/categories/{{ cat.id }}/fields">Gestisci campi<span class="sr-only"> di {{ cat.name }}</span></a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

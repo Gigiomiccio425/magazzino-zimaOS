@@ -613,3 +613,6 @@ select.input { cursor: pointer; }
 .qty-now__num { font-size: 56px; font-weight: 900; line-height: 1; }
 .qty-now__unit { font-weight: 800; text-transform: uppercase; }
 .qty-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; flex: 1; }
+
+.field-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 12px 0; border-bottom: 2px solid var(--paper-2); }
+.field-row--off { opacity: .55; }

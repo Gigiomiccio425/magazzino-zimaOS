@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Campi {{ cat.name }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Campi: {{ cat.name }}{% endblock %}
+
+{% block content %}
+<p><a href="/categories" class="link">&larr; Categorie</a></p>
+<p class="lead">Il nome interno di un campo resta quello iniziale anche se lo rinomini: i valori già salvati non si perdono.</p>
+
+{% for f in fields %}
+<form method="post" action="/categories/fields/{{ f.id }}/edit" class="field-row {% if not f.active %}field-row--off{% endif %}">
+  {{ csrf_field() }}
+  <span class="chip">{{ TYPES.get(f.type, f.type) }}</span>
+  <label class="field"><span class="field__label">Etichetta</span>
+    <input type="text" name="label" value="{{ f.label }}" required maxlength="80" class="input input--sm"></label>
+  <label class="field"><span class="field__label">Unità</span>
+    <input type="text" name="unit" value="{{ f.unit }}" maxlength="20" class="input input--sm"></label>
+  {% if f.type == 'choice' %}
+  <label class="field"><span class="field__label">Scelte (virgola)</span>
+    <input type="text" name="choices" value="{{ f.choices|join(', ') }}" class="input"></label>
+  {% else %}<input type="hidden" name="choices" value="">{% endif %}
+  <label class="field"><span class="field__label">Ordine</span>
+    <input type="number" name="sort_order" value="{{ f.sort_order }}" class="input input--sm"></label>
+  <label class="check"><input type="checkbox" name="filterable" value="1" {% if f.filterable %}checked{% endif %}> Filtro</label>
+  <label class="check"><input type="checkbox" name="active" value="1" {% if f.active %}checked{% endif %}> Attivo</label>
+  <button type="submit" class="btn btn--black btn--sm">Salva</button>
+  {% if f.key != f.label %}<span class="muted">chiave: {{ f.key }}</span>{% endif %}
+</form>
+{% else %}
+<p class="empty">Nessun campo.</p>
+{% endfor %}
+
+<section class="panel">
+  <h2 class="panel__title">Nuovo campo</h2>
+  <form method="post" action="/categories/{{ cat.id }}/fields" class="form form--narrow">
+    {{ csrf_field() }}
+    <label class="field"><span class="field__label">Nome</span>
+      <input type="text" name="label" required maxlength="80" class="input"></label>
+    <label class="field"><span class="field__label">Tipo</span>
+      <select name="type" class="input">{% for code, label in TYPES.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></label>
+    <label class="field"><span class="field__label">Unità (es. GB, m, W)</span>
+      <input type="text" name="unit" maxlength="20" class="input"></label>
+    <label class="field"><span class="field__label">Scelte, separate da virgola (solo tipo Scelta)</span>
+      <input type="text" name="choices" class="input"></label>
+    <button type="submit" class="btn btn--red">Aggiungi campo</button>
+  </form>
+</section>
+{% endblock %}
