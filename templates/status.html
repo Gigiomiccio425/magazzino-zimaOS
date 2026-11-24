@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Stato &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Stato servizi{% endblock %}
+
+{% block content %}
+<section class="status-hero status-hero--{{ worst }}" role="status">
+  {% if worst == 'operational' %}Tutti i servizi operativi{% else %}Problemi in corso: {{ SERVICE_STATUSES[worst] }}{% endif %}
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Servizi</h2>
+  <ul class="status-list">
+    {% for s in services %}
+    <li><a class="link strong" href="/services/{{ s.id }}">{{ s.name }}</a>
+      <span class="svc-status svc-status--{{ s.status }}">{{ SERVICE_STATUSES.get(s.status, s.status) }}</span></li>
+    {% else %}<li class="muted">Nessun servizio registrato.</li>{% endfor %}
+  </ul>
+</section>
+
+{% if active %}
+<section class="panel">
+  <h2 class="panel__title">Incidenti in corso</h2>
+  <ul class="trash-list">{% for i in active %}
+    <li class="trash-item"><span class="sev sev--{{ i.severity }}">{{ i.severity }}</span>
+      <a class="link strong" href="/incidents/{{ i.id }}">{{ i.title }}</a>
+      <span class="tag">{{ INCIDENT_STATUSES.get(i.status) }}</span><time class="muted">dal {{ i.started_at|dt }}</time></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if maint %}
+<section class="panel">
+  <h2 class="panel__title">Manutenzioni</h2>
+  <ul class="trash-list">{% for m in maint %}
+    <li class="trash-item"><span class="tag">{{ MAINTENANCE_STATUSES.get(m.status) }}</span><strong>{{ m.title }}</strong>
+      <span class="muted">{{ m.starts_at|dt }} → {{ m.ends_at|dt }} · {{ m.services|map(attribute='name')|join(', ') }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2 class="panel__title">Ultimi 30 giorni</h2>
+  {% if history %}
+  <ul class="trash-list">{% for i in history %}
+    <li class="trash-item"><span class="sev sev--{{ i.severity }}">{{ i.severity }}</span>
+      <a class="link" href="/incidents/{{ i.id }}">{{ i.title }}</a><time class="muted">risolto {{ i.resolved_at|dt }}</time></li>{% endfor %}</ul>
+  {% else %}<p class="empty">Nessun incidente risolto negli ultimi 30 giorni.</p>{% endif %}
+</section>
+{% endblock %}

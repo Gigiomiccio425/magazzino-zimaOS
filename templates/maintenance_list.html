@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Manutenzioni &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Manutenzioni{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2 class="panel__title">Programma manutenzione</h2>
+  <form method="post" action="/maintenance/new" class="form">
+    {{ csrf_field() }}
+    <div class="form__grid">
+      <label class="field"><span class="field__label">Titolo *</span><input type="text" name="title" required maxlength="200" class="input"></label>
+      <label class="field"><span class="field__label">Inizio *</span><input type="datetime-local" name="starts_at" required class="input"></label>
+      <label class="field"><span class="field__label">Fine *</span><input type="datetime-local" name="ends_at" required class="input"></label>
+    </div>
+    <label class="field"><span class="field__label">Descrizione (markdown)</span><textarea name="description_md" rows="3" class="input"></textarea></label>
+    <fieldset class="fieldset fieldset--block"><legend class="field__label">Servizi coinvolti</legend>
+      {% for s in services %}<label class="check"><input type="checkbox" name="service_ids" value="{{ s.id }}"> {{ s.name }}</label>{% else %}<span class="muted">Nessun servizio.</span>{% endfor %}
+    </fieldset>
+    {% with notify_checked=notify_default %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+    <button type="submit" class="btn btn--red">Programma</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel__title">Elenco</h2>
+  <p class="muted">Avvio e chiusura sono sempre manuali: l'app non cambia nulla da sola.</p>
+  {% if items %}
+  <ol class="changelog">
+    {% for m in items %}
+    {% set late = (m.status == 'scheduled' and m.starts_at < now) or (m.status == 'in_progress' and m.ends_at < now) %}
+    <li class="changelog__item {% if late %}is-late{% endif %}">
+      <div class="changelog__head">
+        <span class="tag">{{ STATUSES.get(m.status, m.status) }}</span>
+        {% if late %}<span class="tag tag--faulty">in ritardo</span>{% endif %}
+        <strong>{{ m.title }}</strong>
+        <span class="muted">{{ m.starts_at|dt }} → {{ m.ends_at|dt }} · {{ m.services|map(attribute='name')|join(', ') }}</span>
+      </div>
+      {% if m.description_md %}<div class="prose">{{ m.description_md|md }}</div>{% endif %}
+      {% if m.status in ('scheduled', 'in_progress') %}
+      <div class="actions">
+        {% if m.status == 'scheduled' %}
+        <form method="post" action="/maintenance/{{ m.id }}/start" class="actions">
+          {{ csrf_field() }}
+          <label class="check"><input type="checkbox" name="set_service_status" value="1" checked> Servizi in "Manutenzione"</label>
+          <label class="check"><input type="checkbox" name="notify" value="1" {% if notify_default %}checked{% endif %}> Discord</label>
+          <button type="submit" class="btn btn--black btn--sm">Avvia</button>
+        </form>
+        {% else %}
+        <form method="post" action="/maintenance/{{ m.id }}/complete" class="actions">
+          {{ csrf_field() }}
+          <label class="check"><input type="checkbox" name="set_service_status" value="1" checked> Servizi "Operativi"</label>
+          <label class="check"><input type="checkbox" name="notify" value="1" {% if notify_default %}checked{% endif %}> Discord</label>
+          <button type="submit" class="btn btn--red btn--sm">Completa</button>
+        </form>
+        {% endif %}
+        <form method="post" action="/maintenance/{{ m.id }}/cancel" data-confirm="Annullare la manutenzione?">
+          {{ csrf_field() }}<input type="hidden" name="notify" value="{{ '1' if notify_default else '' }}">
+          <button type="submit" class="btn btn--outline btn--sm">Annulla</button>
+        </form>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}<p class="empty">Nessuna manutenzione.</p>{% endif %}
+</section>
+{% endblock %}
