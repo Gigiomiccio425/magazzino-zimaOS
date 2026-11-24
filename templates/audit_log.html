@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Audit log &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Audit log{% endblock %}
+
+{% block content %}
+<form method="get" action="/audit" class="filters" role="search">
+  <label class="field"><span class="field__label">Entità</span>
+    <select name="entity" class="input">
+      <option value="">Tutte</option>
+      {% for e in entities %}<option value="{{ e }}" {% if filters.entity == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field"><span class="field__label">Operatore</span>
+    <select name="operator" class="input">
+      <option value="">Tutti</option>
+      {% for o in operators %}<option value="{{ o.id }}" {% if filters.operator == o.id|string %}selected{% endif %}>{{ o.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn--black">Filtra</button>
+  <a href="/audit/verify" class="btn btn--outline">Verifica integrità</a>
+</form>
+
+{% if rows %}
+<div class="table-wrap">
+<table class="table">
+  <caption class="sr-only">Registro modifiche, dalla più recente</caption>
+  <thead>
+    <tr><th scope="col">#</th><th scope="col">Data</th><th scope="col">Chi</th><th scope="col">Entità</th><th scope="col">Azione</th><th scope="col">Modifiche</th></tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="mono">{{ r.id }}</td>
+      <td class="mono nowrap">{{ r.ts|dt }}</td>
+      <td>{% if r.operator %}{{ r.operator.name }}{% if r.signature_id %} <span class="tag" title="Firmato">firmato</span>{% endif %}{% else %}{{ 'Sistema' if r.actor_type == 'system' else '—' }}{% endif %}</td>
+      <td>{{ r.entity_type }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}</td>
+      <td><span class="tag">{{ r.action }}</span></td>
+      <td class="audit-diff">
+        {% set keys = ((r.after or {}).keys()|list + (r.before or {}).keys()|list)|unique|list %}
+        {% for k in keys %}
+          <div><span class="strong">{{ k }}</span>:
+            {% if r.before is not none %}<del>{{ (r.before or {}).get(k, '—') }}</del> &rarr; {% endif %}
+            <ins>{{ (r.after or {}).get(k, '—') }}</ins></div>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<nav class="pager" aria-label="Pagine">
+  {% if page > 1 %}<a class="btn btn--outline" href="?entity={{ filters.entity }}&operator={{ filters.operator }}&page={{ page - 1 }}">&larr; Più recenti</a>{% endif %}
+  {% if has_next %}<a class="btn btn--outline" href="?entity={{ filters.entity }}&operator={{ filters.operator }}&page={{ page + 1 }}">Più vecchie &rarr;</a>{% endif %}
+</nav>
+{% else %}
+<div class="empty-box"><p>Nessuna modifica registrata.</p></div>
+{% endif %}
+{% endblock %}

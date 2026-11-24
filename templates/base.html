@@ -33,6 +33,10 @@
           {% block nav_magazzino %}{% endblock %}
         </div>
         {% block nav_extra %}{% endblock %}
+        <div class="nav__group" role="group" aria-labelledby="nav-g-sys">
+          <span class="nav__group-title" id="nav-g-sys">Sistema</span>
+          {{ navlink("/audit", "Audit log") }}
+        </div>
       </nav>
       <div class="nav__foot">
         <a href="/components/new" class="btn btn--red btn--block">+ Componente</a>

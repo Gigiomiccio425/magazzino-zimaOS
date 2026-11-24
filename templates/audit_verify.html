@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Verifica integrità &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Verifica integrità{% endblock %}
+
+{% block content %}
+<section class="panel">
+  {% if report.ok %}
+    <h2 class="panel__title">Catena integra</h2>
+    <p>{{ report.checked }} righe verificate: nessuna modifica successiva alla registrazione.</p>
+  {% else %}
+    <h2 class="panel__title">Catena alterata</h2>
+    <p class="flash flash--error">La riga #{{ report.first_bad_id }} non corrisponde al suo hash: il registro è stato modificato fuori dall'app a partire da quel punto. Righe valide prima di essa: {{ report.checked }}.</p>
+  {% endif %}
+  <p><a href="/audit" class="link">&larr; Torna all'audit log</a></p>
+</section>
+{% endblock %}

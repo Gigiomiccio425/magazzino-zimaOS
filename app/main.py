@@ -14,11 +14,11 @@ from .core.headers import SecurityHeadersMiddleware
 from .database import make_engine
 from .deps import is_fetch
 from .migrations.runner import run_migrations
-from .routers import auth, components, dashboard, machines
+from .routers import audit_log, auth, components, dashboard, machines
 
 log = logging.getLogger("magazzino")
 
-ROUTERS = [auth, dashboard, components, machines]
+ROUTERS = [auth, dashboard, components, machines, audit_log]
 
 
 async def _csrf_error(request: Request, _exc: CSRFError):
