@@ -31,4 +31,12 @@
   {% else %}<p class="empty">Vuoto.</p>{% endif %}
 </section>
 {% endfor %}
+<section class="panel">
+  <h2 class="panel__title">Cestino allegati</h2>
+  <p>Foto e file rimossi restano sul server finché non svuoti il cestino.</p>
+  <form method="post" action="/attachments/trash/empty" data-sign="critical" data-confirm="Eliminare per sempre tutti gli allegati nel cestino?">
+    {{ csrf_field() }}
+    <button type="submit" class="btn btn--danger">Svuota cestino allegati</button>
+  </form>
+</section>
 {% endblock %}

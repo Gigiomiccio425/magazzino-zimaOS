@@ -646,3 +646,14 @@ select.input { cursor: pointer; }
   .labels { padding: 0; }
   .label { border-color: transparent; }
 }
+
+/* ---- Allegati ---- */
+.att-grid { list-style: none; padding: 0; margin: 0 0 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.att { border: 2px solid var(--black); background: var(--white); display: flex; flex-direction: column; }
+.att__link { display: flex; flex-direction: column; gap: 6px; padding: 6px; }
+.att__thumb { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.att__icon { aspect-ratio: 1; display: grid; place-items: center; background: var(--black); color: var(--paper); font-weight: 900; font-size: 22px; }
+.att__name { font-size: 12px; word-break: break-all; }
+.att__del { font-size: 12px; padding: 4px 6px; }
+.att-upload { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.att-camera { cursor: pointer; }

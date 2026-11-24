@@ -1,0 +1,31 @@
+{# Uso: {% with att_list=..., att_type='component', att_id=c.id %}{% include "partials/attachments.html" %}{% endwith %} #}
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Foto e allegati ({{ att_list|length }})</h2></div>
+  {% if att_list %}
+  <ul class="att-grid">
+    {% for a in att_list %}
+    <li class="att">
+      <a href="/attachments/{{ a.id }}" class="att__link" target="_blank" rel="noopener">
+        {% if a.thumb_path %}<img src="/attachments/{{ a.id }}/thumb" alt="{{ a.filename }}" loading="lazy" class="att__thumb">
+        {% else %}<span class="att__icon" aria-hidden="true">{{ 'PDF' if a.mime == 'application/pdf' else 'TXT' }}</span>{% endif %}
+        <span class="att__name">{{ a.filename }}</span>
+      </a>
+      <form method="post" action="/attachments/{{ a.id }}/delete" data-confirm="Spostare {{ a.filename }} nel cestino?">
+        {{ csrf_field() }}
+        <button type="submit" class="link-btn att__del">Rimuovi<span class="sr-only"> {{ a.filename }}</span></button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/attachments" enctype="multipart/form-data" class="att-upload">
+    {{ csrf_field() }}
+    <input type="hidden" name="entity_type" value="{{ att_type }}">
+    <input type="hidden" name="entity_id" value="{{ att_id }}">
+    <label class="field"><span class="field__label">Aggiungi foto o file (max 25 MB)</span>
+      <input type="file" name="files" multiple class="input" accept="image/*,.pdf,.txt,.log,.json,.csv"></label>
+    <label class="btn btn--outline att-camera">&#128247; Scatta foto
+      <input type="file" name="files" accept="image/*" capture="environment" class="sr-only"></label>
+    <button type="submit" class="btn btn--black">Carica</button>
+  </form>
+</section>

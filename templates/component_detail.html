@@ -105,5 +105,6 @@
     {% else %}<p class="empty">Nessun movimento registrato.</p>{% endif %}
   </section>
 </div>
+{% with att_list=attachments, att_type='component', att_id=c.id %}{% include "partials/attachments.html" %}{% endwith %}
 {% block component_extra %}{% endblock %}
 {% endblock %}
