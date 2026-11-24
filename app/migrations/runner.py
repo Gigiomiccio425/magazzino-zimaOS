@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from . import m0001_baseline
+from . import m0001_baseline, m0002_schema_v2
+from .util import add_column  # noqa: F401  (riesportato)
 
 log = logging.getLogger("magazzino.migrations")
 
@@ -39,16 +40,9 @@ class MigrationReport:
 
 MIGRATIONS: list[Migration] = [
     Migration(1, "baseline v1.1.1", m0001_baseline.apply),
+    Migration(2, "schema v2", m0002_schema_v2.apply),
 ]
 LATEST_VERSION = max(m.version for m in MIGRATIONS)
-
-
-def add_column(conn: sqlite3.Connection, table: str, ddl: str) -> None:
-    """ALTER TABLE ADD COLUMN idempotente. `ddl` = 'nome TIPO ...'."""
-    name = ddl.split()[0]
-    existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
-    if name not in existing:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
 
 def snapshot_db(src: Path, dest: Path) -> Path:

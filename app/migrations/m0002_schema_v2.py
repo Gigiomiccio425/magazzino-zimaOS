@@ -1,0 +1,417 @@
+"""Migrazione 2: schema v2 (solo tabelle, colonne e indici NUOVI; nessun DROP/RENAME)."""
+import sqlite3
+
+from .util import add_column
+
+NEW_TABLES = [
+    """CREATE TABLE IF NOT EXISTS links (
+        id INTEGER NOT NULL,
+        entity_type VARCHAR(40) NOT NULL,
+        entity_id INTEGER NOT NULL,
+        url VARCHAR(1000) NOT NULL,
+        title VARCHAR(200),
+        kind VARCHAR(30),
+        owner VARCHAR(120),
+        repo VARCHAR(120),
+        ref VARCHAR(120),
+        PRIMARY KEY (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS locations (
+        id INTEGER NOT NULL,
+        asset_tag VARCHAR(20),
+        name VARCHAR(120) NOT NULL,
+        kind VARCHAR(20),
+        parent_id INTEGER,
+        notes TEXT,
+        last_audit_at DATETIME,
+        created_at DATETIME,
+        deleted_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(parent_id) REFERENCES locations (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS maintenances (
+        id INTEGER NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        description_md TEXT,
+        starts_at DATETIME NOT NULL,
+        ends_at DATETIME NOT NULL,
+        status VARCHAR(20),
+        created_at DATETIME,
+        PRIMARY KEY (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS operators (
+        id INTEGER NOT NULL,
+        name VARCHAR(80) NOT NULL,
+        name_key VARCHAR(80) NOT NULL,
+        is_admin BOOLEAN,
+        active BOOLEAN,
+        password_hash VARCHAR(255),
+        failed_attempts INTEGER,
+        locked_until DATETIME,
+        created_at DATETIME,
+        PRIMARY KEY (id),
+        UNIQUE (name_key)
+)""",
+    """CREATE TABLE IF NOT EXISTS problems (
+        id INTEGER NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        description_md TEXT,
+        workaround_md TEXT,
+        status VARCHAR(20),
+        created_at DATETIME,
+        PRIMARY KEY (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS settings (
+        "key" VARCHAR(80) NOT NULL,
+        value JSON,
+        PRIMARY KEY ("key")
+)""",
+    """CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER NOT NULL,
+        name VARCHAR(60) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE (name)
+)""",
+    """CREATE TABLE IF NOT EXISTS test_templates (
+        id INTEGER NOT NULL,
+        name VARCHAR(160) NOT NULL,
+        category VARCHAR(80),
+        description TEXT,
+        fields JSON,
+        checklist JSON,
+        active BOOLEAN,
+        PRIMARY KEY (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS webhooks (
+        id INTEGER NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        kind VARCHAR(20),
+        url VARCHAR(500) NOT NULL,
+        enabled BOOLEAN,
+        events JSON,
+        min_severity VARCHAR(10),
+        service_ids JSON,
+        mention_role_id VARCHAR(40),
+        username VARCHAR(80),
+        avatar_url VARCHAR(500),
+        created_at DATETIME,
+        PRIMARY KEY (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS attachments (
+        id INTEGER NOT NULL,
+        entity_type VARCHAR(40) NOT NULL,
+        entity_id INTEGER NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        mime VARCHAR(100) NOT NULL,
+        size INTEGER,
+        path VARCHAR(255) NOT NULL,
+        thumb_path VARCHAR(255),
+        operator_id INTEGER,
+        created_at DATETIME,
+        deleted_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS category_fields (
+        id INTEGER NOT NULL,
+        category_id INTEGER NOT NULL,
+        "key" VARCHAR(80) NOT NULL,
+        label VARCHAR(80) NOT NULL,
+        type VARCHAR(20),
+        unit VARCHAR(20),
+        choices JSON,
+        required BOOLEAN,
+        sort_order INTEGER,
+        filterable BOOLEAN,
+        active BOOLEAN,
+        PRIMARY KEY (id),
+        FOREIGN KEY(category_id) REFERENCES categories (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS incidents (
+        id INTEGER NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        severity VARCHAR(10),
+        status VARCHAR(20),
+        started_at DATETIME,
+        resolved_at DATETIME,
+        summary TEXT,
+        root_cause TEXT,
+        postmortem_md TEXT,
+        operator_id INTEGER,
+        PRIMARY KEY (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS operator_credentials (
+        id INTEGER NOT NULL,
+        operator_id INTEGER NOT NULL,
+        credential_id BLOB NOT NULL,
+        public_key BLOB NOT NULL,
+        sign_count INTEGER,
+        transports JSON,
+        rp_id VARCHAR(255) NOT NULL,
+        label VARCHAR(120),
+        created_at DATETIME,
+        last_used_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id),
+        UNIQUE (credential_id)
+)""",
+    """CREATE TABLE IF NOT EXISTS outbox (
+        id INTEGER NOT NULL,
+        webhook_id INTEGER NOT NULL,
+        event VARCHAR(60) NOT NULL,
+        payload JSON NOT NULL,
+        status VARCHAR(20),
+        attempts INTEGER,
+        next_attempt_at DATETIME,
+        last_error TEXT,
+        created_at DATETIME,
+        sent_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(webhook_id) REFERENCES webhooks (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS signatures (
+        id INTEGER NOT NULL,
+        operator_id INTEGER NOT NULL,
+        method VARCHAR(20) NOT NULL,
+        purpose VARCHAR(300),
+        action_hash VARCHAR(64),
+        rp_id VARCHAR(255),
+        ip VARCHAR(60),
+        user_agent VARCHAR(300),
+        created_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER NOT NULL,
+        ts DATETIME NOT NULL,
+        actor_type VARCHAR(20),
+        operator_id INTEGER,
+        signature_id INTEGER,
+        entity_type VARCHAR(40) NOT NULL,
+        entity_id INTEGER,
+        action VARCHAR(40) NOT NULL,
+        "before" JSON,
+        "after" JSON,
+        prev_hash VARCHAR(64) NOT NULL,
+        hash VARCHAR(64) NOT NULL,
+        PRIMARY KEY (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id),
+        FOREIGN KEY(signature_id) REFERENCES signatures (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS audits (
+        id INTEGER NOT NULL,
+        location_id INTEGER NOT NULL,
+        include_children BOOLEAN,
+        status VARCHAR(20),
+        started_at DATETIME,
+        finished_at DATETIME,
+        operator_id INTEGER,
+        signature_id INTEGER,
+        summary JSON,
+        PRIMARY KEY (id),
+        FOREIGN KEY(location_id) REFERENCES locations (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id),
+        FOREIGN KEY(signature_id) REFERENCES signatures (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS incident_updates (
+        id INTEGER NOT NULL,
+        incident_id INTEGER NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        message TEXT,
+        created_at DATETIME,
+        operator_id INTEGER,
+        signature_id INTEGER,
+        notified BOOLEAN,
+        PRIMARY KEY (id),
+        FOREIGN KEY(incident_id) REFERENCES incidents (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id),
+        FOREIGN KEY(signature_id) REFERENCES signatures (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS problem_incidents (
+        problem_id INTEGER NOT NULL,
+        incident_id INTEGER NOT NULL,
+        PRIMARY KEY (problem_id, incident_id),
+        FOREIGN KEY(problem_id) REFERENCES problems (id),
+        FOREIGN KEY(incident_id) REFERENCES incidents (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER NOT NULL,
+        name VARCHAR(160) NOT NULL,
+        description TEXT,
+        status VARCHAR(20),
+        target_machine_id INTEGER,
+        created_at DATETIME,
+        deleted_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(target_machine_id) REFERENCES machines (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS services (
+        id INTEGER NOT NULL,
+        slug VARCHAR(120) NOT NULL,
+        name VARCHAR(160) NOT NULL,
+        machine_id INTEGER,
+        description TEXT,
+        url VARCHAR(500),
+        status VARCHAR(30),
+        runbook_md TEXT,
+        created_at DATETIME,
+        deleted_at DATETIME,
+        PRIMARY KEY (id),
+        UNIQUE (slug),
+        FOREIGN KEY(machine_id) REFERENCES machines (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS audit_items (
+        id INTEGER NOT NULL,
+        audit_id INTEGER NOT NULL,
+        component_id INTEGER NOT NULL,
+        state VARCHAR(20),
+        scanned_at DATETIME,
+        PRIMARY KEY (id),
+        FOREIGN KEY(audit_id) REFERENCES audits (id),
+        FOREIGN KEY(component_id) REFERENCES components (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS component_tags (
+        component_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        PRIMARY KEY (component_id, tag_id),
+        FOREIGN KEY(component_id) REFERENCES components (id),
+        FOREIGN KEY(tag_id) REFERENCES tags (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS incident_services (
+        incident_id INTEGER NOT NULL,
+        service_id INTEGER NOT NULL,
+        PRIMARY KEY (incident_id, service_id),
+        FOREIGN KEY(incident_id) REFERENCES incidents (id),
+        FOREIGN KEY(service_id) REFERENCES services (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS maintenance_services (
+        maintenance_id INTEGER NOT NULL,
+        service_id INTEGER NOT NULL,
+        PRIMARY KEY (maintenance_id, service_id),
+        FOREIGN KEY(maintenance_id) REFERENCES maintenances (id),
+        FOREIGN KEY(service_id) REFERENCES services (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS problem_services (
+        problem_id INTEGER NOT NULL,
+        service_id INTEGER NOT NULL,
+        PRIMARY KEY (problem_id, service_id),
+        FOREIGN KEY(problem_id) REFERENCES problems (id),
+        FOREIGN KEY(service_id) REFERENCES services (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS project_items (
+        id INTEGER NOT NULL,
+        project_id INTEGER NOT NULL,
+        component_id INTEGER NOT NULL,
+        qty INTEGER,
+        note TEXT,
+        prev_status VARCHAR(30),
+        PRIMARY KEY (id),
+        FOREIGN KEY(project_id) REFERENCES projects (id),
+        FOREIGN KEY(component_id) REFERENCES components (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS service_modules (
+        id INTEGER NOT NULL,
+        service_id INTEGER NOT NULL,
+        name VARCHAR(160) NOT NULL,
+        kind VARCHAR(30),
+        current_version VARCHAR(60),
+        repo_url VARCHAR(500),
+        notes TEXT,
+        PRIMARY KEY (id),
+        FOREIGN KEY(service_id) REFERENCES services (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS test_runs (
+        id INTEGER NOT NULL,
+        component_id INTEGER NOT NULL,
+        template_id INTEGER,
+        result VARCHAR(20) NOT NULL,
+        "values" JSON,
+        checklist JSON,
+        tool VARCHAR(160),
+        notes TEXT,
+        started_at DATETIME,
+        finished_at DATETIME,
+        operator_id INTEGER,
+        signature_id INTEGER,
+        PRIMARY KEY (id),
+        FOREIGN KEY(component_id) REFERENCES components (id),
+        FOREIGN KEY(template_id) REFERENCES test_templates (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id),
+        FOREIGN KEY(signature_id) REFERENCES signatures (id)
+)""",
+    """CREATE TABLE IF NOT EXISTS changes (
+        id INTEGER NOT NULL,
+        service_id INTEGER NOT NULL,
+        module_id INTEGER,
+        type VARCHAR(20),
+        version VARCHAR(60),
+        title VARCHAR(200) NOT NULL,
+        body_md TEXT,
+        occurred_at DATETIME,
+        operator_id INTEGER,
+        signature_id INTEGER,
+        PRIMARY KEY (id),
+        FOREIGN KEY(service_id) REFERENCES services (id),
+        FOREIGN KEY(module_id) REFERENCES service_modules (id),
+        FOREIGN KEY(operator_id) REFERENCES operators (id),
+        FOREIGN KEY(signature_id) REFERENCES signatures (id)
+)""",
+]
+
+NEW_COLUMNS = [
+    ("machines", "asset_tag VARCHAR(20)"),
+    ("machines", "location_id INTEGER REFERENCES locations(id)"),
+    ("machines", "hostname VARCHAR(120)"),
+    ("machines", "ip_address VARCHAR(60)"),
+    ("machines", "os VARCHAR(120)"),
+    ("machines", "deleted_at DATETIME"),
+    ("categories", "icon VARCHAR(40)"),
+    ("categories", "default_tracking VARCHAR(20)"),
+    ("categories", "default_unit VARCHAR(20)"),
+    ("components", "asset_tag VARCHAR(20)"),
+    ("components", "tracking VARCHAR(20)"),
+    ("components", "min_stock INTEGER"),
+    ("components", "unit VARCHAR(20)"),
+    ("components", "location_id INTEGER REFERENCES locations(id)"),
+    ("components", "supplier VARCHAR(160)"),
+    ("components", "purchase_date DATE"),
+    ("components", "purchase_price INTEGER"),
+    ("components", "currency VARCHAR(3)"),
+    ("components", "warranty_until DATE"),
+    ("components", "invoice_ref VARCHAR(120)"),
+    ("components", "last_test_at DATETIME"),
+    ("components", "last_test_result VARCHAR(20)"),
+    ("components", "last_audit_at DATETIME"),
+    ("components", "deleted_at DATETIME"),
+    ("components", "created_by INTEGER REFERENCES operators(id)"),
+    ("components", "updated_by INTEGER REFERENCES operators(id)"),
+    ("movements", "operator_id INTEGER REFERENCES operators(id)"),
+    ("movements", "signature_id INTEGER REFERENCES signatures(id)"),
+    ("movements", "qty_delta INTEGER"),
+    ("movements", "reason TEXT"),
+]
+
+INDEXES = [
+    "CREATE UNIQUE INDEX IF NOT EXISTS ix_components_asset_tag ON components(asset_tag) WHERE asset_tag IS NOT NULL",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ix_machines_asset_tag ON machines(asset_tag) WHERE asset_tag IS NOT NULL",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ix_locations_asset_tag ON locations(asset_tag) WHERE asset_tag IS NOT NULL",
+    "CREATE INDEX IF NOT EXISTS ix_components_deleted ON components(deleted_at)",
+    "CREATE INDEX IF NOT EXISTS ix_components_location ON components(location_id)",
+    "CREATE INDEX IF NOT EXISTS ix_components_status ON components(status)",
+    "CREATE INDEX IF NOT EXISTS ix_movements_component ON movements(component_id)",
+    "CREATE INDEX IF NOT EXISTS ix_audit_log_entity ON audit_log(entity_type, entity_id)",
+    "CREATE INDEX IF NOT EXISTS ix_attachments_entity ON attachments(entity_type, entity_id)",
+    "CREATE INDEX IF NOT EXISTS ix_links_entity ON links(entity_type, entity_id)",
+    "CREATE INDEX IF NOT EXISTS ix_outbox_due ON outbox(status, next_attempt_at)",
+]
+
+
+def apply(conn: sqlite3.Connection) -> None:
+    for stmt in NEW_TABLES:
+        conn.execute(stmt)
+    for table, ddl in NEW_COLUMNS:
+        add_column(conn, table, ddl)
+    for stmt in INDEXES:
+        conn.execute(stmt)
