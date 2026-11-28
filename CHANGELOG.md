@@ -1,6 +1,34 @@
 # Changelog
 
-## 2.3.0 — 2026-11
+## 2.5.0 — 2026-11
+
+Magazzino e controllo
+- Fornitori (codice articolo, prezzo, link, preferito) e ordini d'acquisto numerati (ODA-anno-NNNN):
+  bozza, ordinato, arrivato in parte, ricevuto. All'arrivo gli articoli a scorta aumentano di quantità
+  e per quelli con seriale si crea una scheda per pezzo, da testare.
+- Riordino: elenco degli articoli sotto la scorta minima per fornitore preferito, con la quantità
+  suggerita (meno quanto è già in ordine) e un clic per creare l'ordine.
+- Prenotazioni: dalla scheda di un pezzo lo riservi per un progetto; la scheda mostra per chi è riservato.
+- Controllo compatibilità sulla macchina: socket CPU/scheda madre, generazione RAM e socket,
+  SO-DIMM/DIMM, slot RAM, potenza dell'alimentatore.
+- Ammortamento lineare con vita utile per categoria (modificabile in Categorie): valore attuale nella
+  scheda e nei report.
+- Avvisi: garanzie in scadenza (30 giorni) e manutenzioni del giorno dopo, in dashboard e via webhook,
+  una volta sola.
+- Report stampabili in PDF: valore per categoria (acquisto e attuale), consumi degli ultimi 90 giorni,
+  guasti e test falliti per marca e modello, pezzi fermi da più di 6 mesi.
+- Sedi: casa, ufficio, cantina… raggruppano posizioni principali e macchine; filtro dei componenti per sede.
+
+Telefono, stampa e dati
+- Lettura del testo dell'etichetta (OCR) nello scanner, quando manca un codice: Tesseract.js incluso
+  nell'app (licenza Apache 2.0), caricato solo al primo uso.
+- Schede tecniche da Icecat (account gratuito, nome utente nelle Impostazioni): solo quando premi il
+  pulsante, propone titolo, descrizione e specifiche da copiare.
+- Senza rete: si consultano le ultime pagine aperte; le modifiche sono bloccate fino al ritorno della rete.
+- Stampanti di etichette a rotolo: Brother QL (62 mm continuo, 62 × 29, 29 × 90), Dymo 89 × 36,
+  Zebra 102 × 51, Niimbot e generiche 50 × 30 e 40 × 30. Una pagina per etichetta, della misura giusta.
+
+Modelli, scanner e codici (già pronti per la 2.3)
 
 - Modelli pronti: 209 modelli fra RAM da DDR1 a DDR5 (soprattutto Kingston ValueRAM, HyperX e FURY,
   poi Corsair, Crucial, G.Skill, Samsung, SK Hynix), CPU, SSD, dischi, schede video e alimentatori. Nel nuovo
@@ -19,7 +47,9 @@
 - Telefono e tablet: menu a scomparsa fino a 1024 px con ricerca nel menu, pulsante di chiusura e
   sfondo scuro; bersagli da 48 px al tocco e campi a 16 px; barra in basso Home, Pezzi, Scansiona,
   Stampa (con il numero di etichette in coda), Menu.
-- Tipi RAM da DDR a DDR5 (anche SO-DIMM) nella categoria RAM (migrazione 5: solo aggiunte).
+- Tipi RAM da DDR a DDR5 (anche SO-DIMM) nella categoria RAM.
+
+Dati: migrazioni 5 e 6 aggiungono solo tabelle e colonne nuove; nessun dato esistente cambia.
 
 ## 2.2.0 — 2026-11
 

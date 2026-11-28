@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Da riordinare &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Da riordinare{% endblock %}
+
+{% block content %}
+<p class="lead">Articoli a scorta arrivati alla scorta minima. La quantità suggerita riporta la scorta al doppio del minimo,
+  togliendo quanto è già in ordine. Correggila se serve e crea l'ordine per fornitore.</p>
+{% if not groups %}
+<div class="empty-box"><p>Niente da riordinare: tutte le scorte sono sopra il minimo.</p><a href="/orders" class="btn btn--outline">Ordini</a></div>
+{% endif %}
+{% for sup_id, items in groups.items() %}
+<section class="panel">
+  <form method="post" action="/orders/new">
+    {{ csrf_field() }}
+    <div class="panel__head">
+      <h2 class="panel__title">{{ sups[sup_id].name if sup_id else 'Senza fornitore preferito' }}</h2>
+      {% if not sup_id %}
+      <label class="print-options__field">Ordina da
+        <select name="supplier_id" class="input input--sm"><option value="">— scegli —</option>
+          {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></label>
+      {% else %}<input type="hidden" name="supplier_id" value="{{ sup_id }}">{% endif %}
+    </div>
+    <div class="table-wrap">
+    <table class="table table--cards">
+      <caption class="sr-only">Articoli da riordinare</caption>
+      <thead><tr><th scope="col">Articolo</th><th scope="col">Disponibili</th><th scope="col">Minimo</th><th scope="col">Codice fornitore</th><th scope="col">Da ordinare</th></tr></thead>
+      <tbody>
+      {% for it in items %}
+      <tr>
+        <td data-label="Articolo"><a href="/components/{{ it.component.id }}" class="link">{{ it.component.name }}</a>
+          <input type="hidden" name="component_id" value="{{ it.component.id }}"></td>
+        <td data-label="Disponibili" class="num">{{ it.available }} {{ it.component.unit }}</td>
+        <td data-label="Minimo" class="num">{{ it.component.min_stock }}</td>
+        <td data-label="Codice" class="mono">{{ it.supplier_part.sku if it.supplier_part and it.supplier_part.sku else '—' }}</td>
+        <td data-label="Da ordinare"><label class="sr-only" for="q{{ it.component.id }}">Quantità per {{ it.component.name }}</label>
+          <input type="number" min="0" id="q{{ it.component.id }}" name="qty_{{ it.component.id }}" value="{{ it.suggested }}" class="input input--sm" style="max-width:110px"></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="form__actions"><button type="submit" class="btn btn--red">Crea ordine</button></div>
+  </form>
+</section>
+{% endfor %}
+{% endblock %}

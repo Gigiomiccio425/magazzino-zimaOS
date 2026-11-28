@@ -204,6 +204,37 @@
     });
   }
 
+  // ---- Form con destinazione scelta da una tendina (riserva per progetto, fornitore del pezzo) ----
+  document.addEventListener("change", function (e) {
+    var sel = e.target.closest("[data-reserve-project], [data-supplier-select]");
+    if (sel && sel.form) sel.form.setAttribute("action", sel.value);
+  });
+
+  // ---- Senza rete: solo consultazione (pagine già aperte), niente modifiche ----
+  var offlineBar = null;
+  function setOffline(off) {
+    document.body.classList.toggle("is-offline", off);
+    if (off && !offlineBar) {
+      offlineBar = document.createElement("div");
+      offlineBar.className = "offline-bar";
+      offlineBar.setAttribute("role", "status");
+      offlineBar.textContent = "Senza rete: stai vedendo l'ultima versione salvata di questa pagina. Le modifiche tornano disponibili con la connessione.";
+      document.body.insertBefore(offlineBar, document.body.firstChild);
+    } else if (!off && offlineBar) {
+      offlineBar.remove(); offlineBar = null;
+    }
+  }
+  window.addEventListener("offline", function () { setOffline(true); });
+  window.addEventListener("online", function () { setOffline(false); });
+  if (navigator.onLine === false) setOffline(true);
+  document.addEventListener("submit", function (e) {
+    var method = (e.target.getAttribute && e.target.getAttribute("method") || "get").toLowerCase();
+    if (method === "post" && navigator.onLine === false) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      MAG.toast("Senza rete non si possono salvare modifiche. Riprova quando torna la connessione.", "error");
+    }
+  }, true);
+
   // ---- Auto-dismiss flash ----
   setTimeout(function () {
     document.querySelectorAll(".flashes .flash").forEach(function (f) {

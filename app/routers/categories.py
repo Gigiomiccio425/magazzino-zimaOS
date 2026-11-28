@@ -38,6 +38,25 @@ def categories(request: Request, db: Session = Depends(get_db)):
     return render(request, "categories.html", {"categories": cats, "counts": counts})
 
 
+@router.post("/categories/{cat_id}/life")
+async def category_life(cat_id: int, request: Request, db: Session = Depends(get_db),
+                        signer: SignerInfo = Depends(require_signer())):
+    form = await request.form()
+    cat = db.get(Category, cat_id)
+    raw = str(form.get("months") or "").strip()
+    if cat is None or (raw and not (raw.isdigit() and 1 <= int(raw) <= 240)):
+        flash(request, "Vita utile non valida (da 1 a 240 mesi).", "error")
+        return redirect(request, "/categories")
+    before = cat.useful_life_months
+    cat.useful_life_months = int(raw) if raw else None
+    audit.record(db, entity_type="category", entity_id=cat.id, action="update",
+                 before={"useful_life_months": before}, after={"useful_life_months": cat.useful_life_months},
+                 signer=signer)
+    db.commit()
+    flash(request, f"{cat.name}: vita utile {cat.useful_life_months or 'predefinita'} mesi.")
+    return redirect(request, "/categories")
+
+
 @router.get("/categories/{cat_id}/fields")
 def category_fields(cat_id: int, request: Request, db: Session = Depends(get_db)):
     cat = db.get(Category, cat_id)

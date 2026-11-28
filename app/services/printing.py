@@ -246,3 +246,56 @@ def pack(entries: list[Entry], diameter: int = DIAM_DEFAULT) -> list[list[Placem
 
 def separate_page_count(entries: list[Entry], diameter: int = DIAM_DEFAULT) -> int:
     return sum(len(layout(entries, fmt, diameter).pages) for fmt in FORMATS)
+
+
+# ---------------------------------------------------------------------------
+# Stampanti di etichette a rotolo (Brother QL, Dymo, Zebra, Niimbot e simili): una pagina per etichetta.
+# ---------------------------------------------------------------------------
+ROLL_SIZES = {
+    "62x29": (62.0, 29.0, "Brother QL 62 × 29 mm"),
+    "62c": (62.0, None, "Brother QL 62 mm continuo"),
+    "29x90": (90.0, 29.0, "Brother QL 29 × 90 mm"),
+    "89x36": (89.0, 36.0, "Dymo 89 × 36 mm (99012)"),
+    "102x51": (102.0, 51.0, "Zebra 102 × 51 mm"),
+    "50x30": (50.0, 30.0, "Niimbot e generiche 50 × 30 mm"),
+    "40x30": (40.0, 30.0, "Generiche 40 × 30 mm"),
+}
+ROLL_MARGIN = 1.5
+
+
+@dataclass
+class RollPage:
+    w: float
+    h: float
+    slot: Placement
+    rotate: bool = False
+
+    @property
+    def key(self) -> str:
+        return f"roll-{self.w:g}-{self.h:g}".replace(".", "_")
+
+
+def roll_pages(entries: list[Entry], size: str, diameter: int = DIAM_DEFAULT) -> list[RollPage]:
+    """Una pagina per copia. Rotolo continuo: lunghezza adattata al formato (bandiere ruotate lungo il nastro).
+    Etichette fustellate: tutto entra nell'etichetta scelta (la bandiera diventa un'etichetta normale)."""
+    width, height, _name = ROLL_SIZES.get(size, ROLL_SIZES["62x29"])
+    m = ROLL_MARGIN
+    pages: list[RollPage] = []
+    for e in entries:
+        for _ in range(e.copies):
+            fmt = e.format
+            if height is None:  # nastro continuo
+                if fmt == "flag":
+                    fw, fh = cell_size("flag", diameter)
+                    h = fw + 2 * m
+                    # ruotata di 90°: occupa fh in larghezza, fw in lunghezza
+                    pl = Placement(e, fmt, (width + fh) / 2, m, fw, fh)
+                    pages.append(RollPage(width, h, pl, rotate=True))
+                    continue
+                h = {"qr": QR_CELL[1], "label": LABEL_CELL[1]}.get(fmt, LABEL_CELL[1]) + 2 * m
+                pages.append(RollPage(width, h, Placement(e, fmt, m, m, width - 2 * m, h - 2 * m)))
+            else:
+                if fmt == "flag":
+                    fmt = "label"
+                pages.append(RollPage(width, height, Placement(e, fmt, m, m, width - 2 * m, height - 2 * m)))
+    return pages

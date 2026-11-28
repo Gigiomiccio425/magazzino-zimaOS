@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Sedi &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Sedi e magazzini{% endblock %}
+
+{% block content %}
+<p class="lead">Una sede raggruppa le posizioni principali (stanze, armadi) e le macchine: casa, ufficio, cantina…
+  Le posizioni interne seguono la sede di quella principale. I filtri dei componenti e gli inventari si possono fare per sede.</p>
+
+<section class="stats">
+  {% for s in sites %}
+  <a href="/components?site={{ s.id }}" class="stat"><div class="stat__num">{{ counts.get(s.id, 0) }}</div>
+    <div class="stat__label">{{ s.name }} · {{ machines.get(s.id, 0) }} macchine</div></a>
+  {% endfor %}
+  <div class="stat"><div class="stat__num">{{ counts.get(none, 0) }}</div><div class="stat__label">Senza sede</div></div>
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Posizioni principali</h2></div>
+    {% if roots %}
+    <ul class="plain-list">
+      {% for loc in roots %}
+      <li class="site-row">
+        <span class="strong">{{ loc.name }}</span>
+        <form method="post" action="/sites/assign" class="site-row__form">{{ csrf_field() }}
+          <input type="hidden" name="kind" value="location"><input type="hidden" name="id" value="{{ loc.id }}">
+          <label class="sr-only" for="sl{{ loc.id }}">Sede di {{ loc.name }}</label>
+          <select id="sl{{ loc.id }}" name="site_id" class="input input--sm"><option value="">— nessuna —</option>
+            {% for s in sites %}<option value="{{ s.id }}" {% if loc.site_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+          <button type="submit" class="btn btn--outline btn--sm">Salva</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="empty">Nessuna posizione.</p>{% endif %}
+  </section>
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Macchine</h2></div>
+    {% if all_machines %}
+    <ul class="plain-list">
+      {% for m in all_machines %}
+      <li class="site-row">
+        <span class="strong">{{ m.name }}</span>
+        <form method="post" action="/sites/assign" class="site-row__form">{{ csrf_field() }}
+          <input type="hidden" name="kind" value="machine"><input type="hidden" name="id" value="{{ m.id }}">
+          <label class="sr-only" for="sm{{ m.id }}">Sede di {{ m.name }}</label>
+          <select id="sm{{ m.id }}" name="site_id" class="input input--sm"><option value="">— nessuna —</option>
+            {% for s in sites %}<option value="{{ s.id }}" {% if m.site_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+          <button type="submit" class="btn btn--outline btn--sm">Salva</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="empty">Nessuna macchina.</p>{% endif %}
+  </section>
+</div>
+
+<form method="post" action="/sites/new" class="form form--narrow">
+  {{ csrf_field() }}
+  <h2 class="panel__title">Nuova sede</h2>
+  <label class="field"><span class="field__label">Nome *</span><input type="text" name="name" required maxlength="120" class="input" placeholder="es. Casa, Ufficio, Cantina"></label>
+  <label class="field"><span class="field__label">Indirizzo</span><input type="text" name="address" maxlength="300" class="input"></label>
+  <div class="form__actions"><button type="submit" class="btn btn--red">Crea sede</button></div>
+</form>
+{% endblock %}

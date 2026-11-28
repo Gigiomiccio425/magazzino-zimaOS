@@ -60,6 +60,12 @@
     <label class="field"><span class="field__label">Modello</span>
       <input type="text" name="model" class="input" value="{{ val('model') }}"></label>
 
+    <div class="field icecat-box">
+      <button type="button" class="btn btn--outline" data-icecat>Cerca scheda tecnica (Icecat)</button>
+      <span class="field__help">Usa produttore e codice oggetto (o modello). Ti propone titolo, descrizione e specifiche da copiare.</span>
+      <div class="icecat-result" data-icecat-result aria-live="polite" hidden></div>
+    </div>
+
     <label class="field"><span class="field__label">Produttore</span>
       <input type="text" name="manufacturer" class="input" value="{{ val('manufacturer') }}"></label>
 

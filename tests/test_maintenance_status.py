@@ -41,7 +41,8 @@ def test_transitions_manual_only(app, client, db, svc):
     schedule(client, svc, past, past + timedelta(hours=1))
     m = db.query(Maintenance).one()
     # il worker ha solo backup e consegna webhook: nessun job cambia le manutenzioni da solo
-    assert {job.__name__ for _, job in Worker(app).jobs} == {"backup_job", "outbox_job", "purge_job"}
+    # (alerts_job manda solo promemoria: non cambia lo stato delle manutenzioni)
+    assert {job.__name__ for _, job in Worker(app).jobs} == {"backup_job", "outbox_job", "purge_job", "alerts_job"}
     db.expire_all()
     assert db.get(Maintenance, m.id).status == "scheduled"
 

@@ -3,17 +3,23 @@
 {% block heading %}Categorie{% endblock %}
 
 {% block content %}
+<p class="lead">La vita utile serve all'ammortamento: il valore di un pezzo scende in modo lineare fino a zero in quei mesi.</p>
 <p class="lead">Ogni categoria ha i suoi campi (es. VRAM per le GPU, lunghezza per i cavi): compaiono nel form del componente e come filtri nella lista.</p>
 <div class="table-wrap">
 <table class="table">
   <caption class="sr-only">Categorie</caption>
-  <thead><tr><th scope="col">Categoria</th><th scope="col">Campi</th><th scope="col">Componenti</th><th scope="col"></th></tr></thead>
+  <thead><tr><th scope="col">Categoria</th><th scope="col">Campi</th><th scope="col">Componenti</th><th scope="col">Vita utile</th><th scope="col"></th></tr></thead>
   <tbody>
   {% for cat in categories %}
     <tr>
       <td class="strong">{{ cat.name }}</td>
       <td>{{ cat.fields|selectattr('active')|list|length }}</td>
       <td>{{ counts.get(cat.name, 0) }}</td>
+      <td><form method="post" action="/categories/{{ cat.id }}/life" class="life-form">{{ csrf_field() }}
+        <label class="sr-only" for="life{{ cat.id }}">Vita utile di {{ cat.name }} in mesi</label>
+        <input type="number" id="life{{ cat.id }}" name="months" min="1" max="240" value="{{ cat.useful_life_months or '' }}" placeholder="60" class="input input--sm">
+        <span class="muted small">mesi</span>
+        <button type="submit" class="btn btn--outline btn--sm">Salva</button></form></td>
       <td><a class="link" href="/categories/{{ cat.id }}/fields">Gestisci campi<span class="sr-only"> di {{ cat.name }}</span></a></td>
     </tr>
   {% endfor %}

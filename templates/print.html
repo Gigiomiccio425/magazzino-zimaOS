@@ -73,8 +73,14 @@
         Foglio unico ottimizzato <span class="mono">{{ mixed_pages }} {{ 'foglio' if mixed_pages == 1 else 'fogli' }}</span></a>
       <a href="/print?{{ query_for(mode='separate') }}" role="tab" class="tab" aria-selected="{{ 'true' if opts.mode == 'separate' else 'false' }}">
         Fogli pretagliati per formato <span class="mono">{{ separate_pages }} {{ 'foglio' if separate_pages == 1 else 'fogli' }}</span></a>
+      <a href="/print?{{ query_for(mode='roll') }}" role="tab" class="tab" aria-selected="{{ 'true' if opts.mode == 'roll' else 'false' }}">
+        Stampante a rotolo</a>
     </div>
-    {% if opts.mode == 'mixed' %}
+    {% if opts.mode == 'roll' %}
+    <p class="print-note">Una pagina per etichetta, già della misura giusta: Brother QL, Dymo e Zebra stampano dal browser con il loro driver.
+      Sulle etichette fustellate la bandiera diventa un'etichetta normale; sul nastro continuo resta bandiera, ruotata lungo il nastro.
+      Per Niimbot e stampanti senza driver: "Salva come PDF" e apri il file con la loro app.</p>
+    {% elif opts.mode == 'mixed' %}
     <p class="print-note">Carta adesiva A4 intera: etichette, QR e bandiere vengono sistemati insieme sullo stesso foglio,
       dal più grande al più piccolo, riempiendo ogni spazio libero. Si ritaglia lungo le linee.
       {% if separate_pages > mixed_pages %}<strong>Risparmi {{ separate_pages - mixed_pages }} {{ 'foglio' if separate_pages - mixed_pages == 1 else 'fogli' }}</strong> rispetto ai fogli separati.{% endif %}</p>
@@ -90,6 +96,11 @@
 
     <form method="get" action="/print" class="print-options">
       <input type="hidden" name="mode" value="{{ opts.mode }}">
+      {% if opts.mode == 'roll' %}
+      <label class="print-options__field">Etichetta
+        <select name="roll" class="input input--sm" style="width:auto">
+          {% for code, size in ROLL_SIZES.items() %}<option value="{{ code }}" {% if code == opts.roll %}selected{% endif %}>{{ size[2] }}</option>{% endfor %}</select></label>
+      {% else %}<input type="hidden" name="roll" value="{{ opts.roll }}">{% endif %}
       <input type="hidden" name="sheet" value="{{ opts.sheet }}">
       {% if has_flags %}
       <label class="print-options__field">Diametro cavo (mm)
@@ -105,7 +116,16 @@
       <button type="submit" class="btn btn--sm btn--outline">Aggiorna anteprima</button>
     </form>
 
-    {% if preview %}
+    {% if opts.mode == 'roll' and roll_preview %}
+    <div class="sheet-stage roll-stage">
+      {% for p in roll_preview %}
+      <div class="roll-scale" style="width:{{ p.w }}mm;height:{{ p.h }}mm">
+        {% with page=p.slots, cuts=true, page_class=p.key, page_style='width:' ~ p.w ~ 'mm;height:' ~ p.h ~ 'mm' %}{% include "partials/print_sheet.html" %}{% endwith %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="muted small">Prime etichette a grandezza reale.</p>
+    {% elif preview %}
     <div class="sheet-stage">
       <div class="sheet-scale">
         {% with page=preview, cuts=opts.cuts %}{% include "partials/print_sheet.html" %}{% endwith %}

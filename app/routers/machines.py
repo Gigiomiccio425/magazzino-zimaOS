@@ -79,7 +79,9 @@ def machine_detail(machine_id: int, request: Request, db: Session = Depends(get_
     components = (
         alive(db.query(Component), Component).filter(Component.machine_id == m.id).order_by(Component.category).all()
     )
-    return render(request, "machine_detail.html", {"machine": m, "components": components})
+    from ..services import compat
+    return render(request, "machine_detail.html", {"machine": m, "components": components,
+                                                   "compat": compat.check(m, components)})
 
 
 @router.get("/machines/{machine_id}/edit")

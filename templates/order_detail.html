@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ order.number }} &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Ordine {{ order.number }}{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <div class="detail-meta">
+    <span class="status status--order-{{ order.status }}">{{ ORDER_STATUSES[order.status] }}</span>
+    <span>{{ order.supplier.name if order.supplier else 'Fornitore non indicato' }}</span>
+    {% if order.expected_at %}<span class="mono">arrivo previsto {{ order.expected_at.strftime('%d/%m/%Y') }}</span>{% endif %}
+    {% if total %}<span class="mono">totale {{ '%.2f'|format(total / 100)|replace('.', ',') }} €</span>{% endif %}
+  </div>
+  <div class="detail-actions">
+    <a href="/orders" class="btn btn--outline">Tutti gli ordini</a>
+    <button type="button" class="btn btn--outline" data-print>Stampa</button>
+  </div>
+</div>
+
+{% if order.status in ('ordered', 'partial') %}
+<form method="post" action="/orders/{{ order.id }}/receive" class="panel">
+  {{ csrf_field() }}
+  <div class="panel__head"><h2 class="panel__title">Arrivo merce</h2></div>
+  <p class="muted small">Scrivi quanti pezzi sono arrivati per riga. Gli articoli a scorta aumentano di quantità; per quelli con
+    seriale si crea una scheda per pezzo, da testare e completare con il seriale.</p>
+  <div class="table-wrap">
+  <table class="table table--cards">
+    <caption class="sr-only">Righe da ricevere</caption>
+    <thead><tr><th scope="col">Articolo</th><th scope="col">Ordinati</th><th scope="col">Già arrivati</th><th scope="col">Arrivati ora</th></tr></thead>
+    <tbody>
+    {% for line in order.lines %}
+    <tr>
+      <td data-label="Articolo">{{ line.description }}</td>
+      <td data-label="Ordinati" class="num">{{ line.qty }}</td>
+      <td data-label="Già arrivati" class="num">{{ line.qty_received }}</td>
+      <td data-label="Arrivati ora">{% if line.qty_received < line.qty %}
+        <label class="sr-only" for="r{{ line.id }}">Arrivati ora: {{ line.description }}</label>
+        <input type="number" id="r{{ line.id }}" name="recv_{{ line.id }}" min="0" max="{{ line.qty - line.qty_received }}" value="{{ line.qty - line.qty_received }}" class="input input--sm" style="max-width:110px">
+        {% else %}completo{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% with notify_checked=false, notify_label='Pubblica su Discord' %}{% include "partials/notify_checkbox.html" %}{% endwith %}
+  <div class="form__actions"><button type="submit" class="btn btn--red">Carica a magazzino</button></div>
+</form>
+{% endif %}
+
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Righe</h2></div>
+  {% if order.lines %}
+  <div class="table-wrap">
+  <table class="table table--cards">
+    <caption class="sr-only">Righe dell'ordine</caption>
+    <thead><tr><th scope="col">Articolo</th><th scope="col">Quantità</th><th scope="col">Prezzo unitario</th><th scope="col">Arrivati</th></tr></thead>
+    <tbody>
+    {% for line in order.lines %}
+    <tr>
+      <td data-label="Articolo">{% if line.component %}<a href="/components/{{ line.component.id }}" class="link">{{ line.description }}</a>{% else %}{{ line.description }}{% endif %}</td>
+      <td data-label="Quantità" class="num">{{ line.qty }}</td>
+      <td data-label="Prezzo" class="num">{{ ('%.2f'|format(line.unit_price / 100)|replace('.', ',') ~ ' €') if line.unit_price is not none else '—' }}</td>
+      <td data-label="Arrivati" class="num">{{ line.qty_received }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="empty">Nessuna riga.</p>{% endif %}
+
+  {% if order.status in ('draft', 'ordered', 'partial') %}
+  <form method="post" action="/orders/{{ order.id }}/lines" class="print-options no-print" style="margin-top:12px">
+    {{ csrf_field() }}
+    <label class="print-options__field">Componente
+      <select name="component_id" class="input input--sm"><option value="">— nuovo articolo (scrivi sotto) —</option>
+        {% for c in components %}<option value="{{ c.id }}">{{ c.name }}{% if c.asset_tag %} · {{ c.asset_tag }}{% endif %}</option>{% endfor %}</select></label>
+    <label class="print-options__field">Descrizione <input type="text" name="description" maxlength="200" class="input input--sm" style="width:auto"></label>
+    <label class="print-options__field">Quantità <input type="number" name="qty" min="1" value="1" class="input input--sm"></label>
+    <label class="print-options__field">Prezzo € <input type="text" name="unit_price" inputmode="decimal" class="input input--sm" placeholder="49,90"></label>
+    <button type="submit" class="btn btn--outline btn--sm">Aggiungi riga</button>
+  </form>
+  {% endif %}
+</section>
+
+{% if order.status == 'draft' %}
+<form method="post" action="/orders/{{ order.id }}/status" class="print-options no-print">
+  {{ csrf_field() }}<input type="hidden" name="status" value="ordered">
+  <label class="print-options__field">Arrivo previsto <input type="date" name="expected_at" class="input input--sm" style="width:auto"></label>
+  <button type="submit" class="btn btn--red">Segna come ordinato</button>
+</form>
+{% endif %}
+{% if order.status in ('draft', 'ordered', 'partial') %}
+<form method="post" action="/orders/{{ order.id }}/status" class="no-print" data-confirm="Annullare l'ordine {{ order.number }}?" style="margin-top:10px">
+  {{ csrf_field() }}<input type="hidden" name="status" value="cancelled">
+  <button type="submit" class="btn btn--danger btn--sm">Annulla ordine</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Report &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Report{% endblock %}
+{% macro eur(cents) %}{{ '{:,.0f}'.format((cents or 0) / 100).replace(',', '.') }} €{% endmacro %}
+
+{% block content %}
+<div class="toolbar no-print">
+  <button type="button" class="btn btn--red" data-print>Stampa o salva PDF</button>
+</div>
+
+<section class="stats">
+  <div class="stat"><div class="stat__num">{{ eur(total_bought) }}</div><div class="stat__label">Valore d'acquisto</div></div>
+  <div class="stat stat--black"><div class="stat__num">{{ eur(total_current) }}</div><div class="stat__label">Valore attuale (ammortizzato)</div></div>
+  <div class="stat"><div class="stat__num">{{ eur(total_bought - total_current) }}</div><div class="stat__label">Perdita di valore</div></div>
+</section>
+
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Valore per categoria</h2><a href="/categories" class="link-more">Vita utile</a></div>
+  {% if values %}
+  <ul class="report-bars">
+    {% for v in values %}
+    <li class="report-bar">
+      <span class="report-bar__label">{{ v.category }} <span class="muted mono">{{ v.count }} pz</span></span>
+      <span class="report-bar__track" aria-hidden="true">
+        <span class="report-bar__bought" style="width: {{ (100 * v.bought / top)|round(1) }}%"></span>
+        <span class="report-bar__current" style="width: {{ (100 * v.current / top)|round(1) }}%"></span>
+      </span>
+      <span class="report-bar__value mono">{{ eur(v.current) }} <span class="muted">/ {{ eur(v.bought) }}</span></span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="muted small">Barra chiara: valore d'acquisto. Barra scura: valore attuale con ammortamento lineare sulla vita utile della
+    categoria. Contano solo i pezzi con prezzo; senza data d'acquisto il valore resta quello pagato.</p>
+  {% else %}<p class="empty">Nessun componente.</p>{% endif %}
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Consumi ultimi 90 giorni</h2></div>
+    {% if consumption %}
+    <table class="table"><caption class="sr-only">Materiale consumato</caption>
+      <thead><tr><th scope="col">Articolo</th><th scope="col">Categoria</th><th scope="col">Usati</th></tr></thead>
+      <tbody>{% for r in consumption %}<tr><td>{{ r.name }}</td><td>{{ r.category }}</td><td class="num">{{ r.used }} {{ r.unit }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}<p class="empty">Nessun prelievo registrato negli ultimi 90 giorni.</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Guasti per marca e modello</h2></div>
+    {% if faults %}
+    <table class="table"><caption class="sr-only">Guasti</caption>
+      <thead><tr><th scope="col">Marca</th><th scope="col">Modello</th><th scope="col">Guasti</th><th scope="col">Test falliti</th></tr></thead>
+      <tbody>{% for r in faults %}<tr><td>{{ r.manufacturer }}</td><td>{{ r.model }}</td>
+        <td class="num">{{ r.bad }}/{{ r.total }} <span class="muted">({{ r.rate }}%)</span></td><td class="num">{{ r.failed_tests }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}<p class="empty">Nessun guasto o test fallito.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel__head"><h2 class="panel__title">Fermi da più di 6 mesi</h2></div>
+  {% if idle %}
+  <table class="table table--cards"><caption class="sr-only">Pezzi fermi</caption>
+    <thead><tr><th scope="col">Componente</th><th scope="col">Seriale magazzino</th><th scope="col">Fermo da</th></tr></thead>
+    <tbody>{% for r in idle %}<tr><td data-label="Componente"><a href="/components/{{ r.component.id }}" class="link">{{ r.component.name }}</a></td>
+      <td data-label="Seriale" class="mono">{{ r.component.stock_serial or '—' }}</td><td data-label="Fermo da" class="num">{{ r.days }} giorni</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="empty">Nessun pezzo fermo da più di 6 mesi.</p>{% endif %}
+</section>
+{% endblock %}

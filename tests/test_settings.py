@@ -24,7 +24,8 @@ VALID = {"signature_window_min": "15", "audit_interval_days": "90", "public_base
 
 
 def test_defaults(client, db):
-    assert DEFAULTS == {"signature_window_min": 10, "audit_interval_days": 180, "public_base_url": ""}
+    assert DEFAULTS == {"signature_window_min": 10, "audit_interval_days": 180, "public_base_url": "",
+                        "icecat_username": ""}
     assert get_setting(db, "signature_window_min") == 10
     assert get_setting(db, "inesistente") is None
 

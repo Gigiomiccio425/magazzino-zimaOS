@@ -55,7 +55,7 @@ Dati: `/Apps/g-d-app-store-gd-magazzino/data` (database, allegati, backup).
 ```yaml
 services:
   magazzino:
-    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.3.0
+    image: ghcr.io/gigiomiccio425/magazzino-zimaos:2.5.0
     ports: ["8086:8000"]
     environment:
       - TZ=Europe/Rome

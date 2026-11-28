@@ -7,12 +7,25 @@
   <button type="button" class="btn btn--red" data-print>Stampa</button>
   <a href="{{ back }}" class="btn btn--outline">Torna alla coda</a>
 </div>
-<p class="no-print lead">
+{% if not roll %}<p class="no-print lead">
   {{ pages|length }} {{ 'foglio' if pages|length == 1 else 'fogli' }} A4{% if opts.mode == 'mixed' %} adesivi interi: ritaglia lungo le linee tratteggiate{% endif %}.
   Nella finestra di stampa scegli scala 100% (o "dimensioni reali") e margini nessuno. Per un PDF scegli "Salva come PDF" come stampante.
-</p>
-{% if not pages %}
+</p>{% endif %}
+{% if not pages and not roll %}
 <div class="empty-box no-print"><p>Niente da stampare.</p></div>
+{% endif %}
+{% if roll %}
+<style>
+{% for p in roll|unique(attribute='key') %}@page {{ p.key }} { size: {{ p.w }}mm {{ p.h }}mm; margin: 0; }
+.{{ p.key }} { page: {{ p.key }}; }
+{% endfor %}
+</style>
+<p class="no-print lead">{{ roll|length }} etichette per la stampante a rotolo ({{ ROLL_NAME }}). Nella stampa scegli la stampante di etichette, il formato carta uguale all'etichetta e scala 100%.</p>
+<div class="sheets">
+  {% for p in roll %}
+    {% with page=p.slots, cuts=false, page_class=p.key, page_style='width:' ~ p.w ~ 'mm;height:' ~ p.h ~ 'mm' %}{% include "partials/print_sheet.html" %}{% endwith %}
+  {% endfor %}
+</div>
 {% endif %}
 <div class="sheets">
   {% for page in pages %}

@@ -1,4 +1,4 @@
-<div class="sheet{% if cuts %} sheet--cuts{% endif %}">
+<div class="sheet{% if cuts %} sheet--cuts{% endif %}{% if page_class %} sheet--roll {{ page_class }}{% endif %}"{% if page_style %} style="{{ page_style }}"{% endif %}>
   {% for s in page %}
   <div class="slot{% if not s.entry %} slot--empty{% endif %}" style="{{ s.style }}">
     {% if s.entry %}{% set e = s.entry %}

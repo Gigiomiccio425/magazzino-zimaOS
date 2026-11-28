@@ -161,5 +161,6 @@ class Maintenance(Base):
     ends_at = Column(DateTime, nullable=False)
     status = Column(String(20), default="scheduled")
     created_at = Column(DateTime, default=utcnow)
+    reminded_at = Column(DateTime)  # 2.4: promemoria già inviato
 
     services = relationship("Service", secondary=maintenance_services)

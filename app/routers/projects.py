@@ -77,7 +77,7 @@ def project_detail(pid: int, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/projects/{pid}/items")
 def project_add_item(pid: int, request: Request, component_id: str = Form(""), qty: str = Form("1"),
-                     note: str = Form(""), db: Session = Depends(get_db),
+                     note: str = Form(""), next: str = Form(""), db: Session = Depends(get_db),
                      signer: SignerInfo = Depends(require_signer())):
     p = _get(db, pid)
     back = f"/projects/{pid}"
@@ -104,7 +104,7 @@ def project_add_item(pid: int, request: Request, component_id: str = Form(""), q
                  after={"component": comp.id, "qty": item.qty}, signer=signer)
     db.commit()
     flash(request, f"\"{comp.name}\" prenotato.")
-    return redirect(request, back)
+    return redirect(request, next if next.startswith("/components/") else back)
 
 
 def _release(db: Session, item: ProjectItem, signer, project: Project) -> None:

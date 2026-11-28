@@ -126,5 +126,45 @@
   {% else %}<p class="empty">Nessun test registrato.</p>{% endif %}
 </section>
 {% with att_list=attachments, att_type='component', att_id=c.id %}{% include "partials/attachments.html" %}{% endwith %}
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Prenotazioni</h2><a href="/projects" class="link-more">Progetti</a></div>
+    {% if reservations %}
+    <ul class="plain-list">{% for it in reservations %}<li>Riservato per <a href="/projects/{{ it.project.id }}" class="link">{{ it.project.name }}</a>{% if c.tracking == 'quantity' %} · {{ it.qty }} {{ c.unit }}{% endif %}{% if it.note %} · {{ it.note }}{% endif %}</li>{% endfor %}</ul>
+    {% else %}<p class="empty">Non è riservato per nessun progetto.</p>{% endif %}
+    {% if open_projects and c.status not in ('sold', 'retired') %}
+    <form method="post" action="/projects/{{ open_projects[0].id }}/items" class="print-options reserve-form" data-reserve>
+      {{ csrf_field() }}<input type="hidden" name="component_id" value="{{ c.id }}"><input type="hidden" name="next" value="/components/{{ c.id }}">
+      <label class="print-options__field">Riserva per
+        <select class="input input--sm" data-reserve-project aria-label="Progetto">
+          {% for p in open_projects %}<option value="/projects/{{ p.id }}/items">{{ p.name }}</option>{% endfor %}</select></label>
+      {% if c.tracking == 'quantity' %}<label class="print-options__field">Quantità <input type="number" name="qty" min="1" value="1" class="input input--sm"></label>{% endif %}
+      <label class="print-options__field">Nota <input type="text" name="note" maxlength="200" class="input input--sm" style="width:auto"></label>
+      <button type="submit" class="btn btn--outline btn--sm">Riserva</button>
+    </form>
+    {% elif not open_projects %}<p class="muted small"><a href="/projects" class="link">Crea un progetto</a> (build, riparazione…) per riservare dei pezzi.</p>{% endif %}
+  </section>
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Valore e fornitori</h2><a href="/orders/reorder" class="link-more">Riordino</a></div>
+    <dl class="specs">
+      <div class="spec"><dt>Valore attuale</dt><dd>{% if current_value is not none %}{{ '%.2f'|format(current_value / 100)|replace('.', ',') }} € <span class="muted small">(ammortamento in {{ life_months }} mesi)</span>{% else %}— <span class="muted small">serve il prezzo d'acquisto</span>{% endif %}</dd></div>
+    </dl>
+    {% if supplier_parts %}
+    <ul class="plain-list">{% for sp in supplier_parts %}<li>{% if sp.preferred %}<strong>Preferito:</strong> {% endif %}{{ sp.supplier.name }}{% if sp.sku %} · <span class="mono">{{ sp.sku }}</span>{% endif %}{% if sp.price is not none %} · {{ '%.2f'|format(sp.price / 100)|replace('.', ',') }} €{% endif %}{% if sp.url %} · <a href="{{ sp.url }}" class="link" target="_blank" rel="noopener noreferrer">apri</a>{% endif %}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if suppliers %}
+    <form method="post" action="/suppliers/{{ suppliers[0].id }}/parts" class="print-options" data-supplier-part>
+      {{ csrf_field() }}<input type="hidden" name="component_id" value="{{ c.id }}"><input type="hidden" name="next" value="/components/{{ c.id }}">
+      <label class="print-options__field">Fornitore
+        <select class="input input--sm" data-supplier-select aria-label="Fornitore">{% for s in suppliers %}<option value="/suppliers/{{ s.id }}/parts">{{ s.name }}</option>{% endfor %}</select></label>
+      <label class="print-options__field">Codice <input type="text" name="sku" maxlength="120" class="input input--sm" style="width:auto"></label>
+      <label class="print-options__field">Prezzo € <input type="text" name="price" inputmode="decimal" class="input input--sm"></label>
+      <label class="print-options__field">Link <input type="url" name="url" class="input input--sm" style="width:auto"></label>
+      <label class="check"><input type="checkbox" name="preferred" value="1"> Preferito</label>
+      <button type="submit" class="btn btn--outline btn--sm">Salva fornitore</button>
+    </form>
+    {% else %}<p class="muted small"><a href="/suppliers" class="link">Aggiungi un fornitore</a> per collegarlo a questo pezzo.</p>{% endif %}
+  </section>
+</div>
 {% block component_extra %}{% endblock %}
 {% endblock %}

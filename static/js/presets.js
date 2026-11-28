@@ -51,3 +51,53 @@
     }
   });
 })();
+
+// Scheda tecnica da Icecat: solo su richiesta, propone dati da copiare nel modulo.
+(function () {
+  "use strict";
+  var MAG = window.MAG, btn = document.querySelector("[data-icecat]");
+  if (!btn) return;
+  var box = document.querySelector("[data-icecat-result]"), form = btn.closest("form");
+  function field(name) { return form.querySelector('[name="' + name + '"]'); }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function action(label, fn) { var b = el("button", "btn btn--outline btn--sm", label); b.type = "button"; b.addEventListener("click", fn); return b; }
+  function appendNotes(text) {
+    var notes = field("notes");
+    if (!notes) return;
+    notes.value = (notes.value ? notes.value.replace(/\s+$/, "") + "\n\n" : "") + text;
+    MAG.toast("Aggiunto alle note.");
+  }
+
+  btn.addEventListener("click", function () {
+    var brand = (field("manufacturer").value || "").trim();
+    var part = (field("object_code").value || field("model").value || "").trim();
+    box.hidden = false; box.textContent = "Cerco su Icecat…";
+    btn.disabled = true;
+    MAG.fetchJSON("/presets/icecat?brand=" + encodeURIComponent(brand) + "&part=" + encodeURIComponent(part))
+      .then(function (r) {
+        btn.disabled = false;
+        box.textContent = "";
+        var d = r.data || {};
+        if (!d.found) { box.appendChild(el("p", "muted", d.message || "Nessun risultato.")); return; }
+        var f = d.found;
+        box.appendChild(el("p", "icecat-result__title strong", f.title));
+        var acts = el("div", "icecat-result__actions");
+        acts.appendChild(action("Usa come nome", function () { field("name").value = f.title; MAG.toast("Nome aggiornato."); }));
+        if (f.description) acts.appendChild(action("Descrizione nelle note", function () { appendNotes(f.description); }));
+        if (f.specs.length) acts.appendChild(action("Specifiche nelle note", function () {
+          appendNotes("Scheda Icecat:\n" + f.specs.map(function (s) { return "- " + s.name + ": " + s.value; }).join("\n"));
+        }));
+        var link = el("a", "link", "Apri su Icecat");
+        link.href = "https://icecat.biz/it/search?keyword=" + encodeURIComponent(f.part || part);
+        link.target = "_blank"; link.rel = "noopener noreferrer";
+        acts.appendChild(link);
+        box.appendChild(acts);
+        if (f.specs.length) {
+          var dl = el("dl", "icecat-result__specs");
+          f.specs.slice(0, 14).forEach(function (s) { dl.appendChild(el("dt", null, s.name)); dl.appendChild(el("dd", null, s.value)); });
+          box.appendChild(dl);
+        }
+      })
+      .catch(function () { btn.disabled = false; box.textContent = "Errore di rete."; });
+  });
+})();

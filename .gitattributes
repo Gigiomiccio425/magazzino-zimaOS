@@ -4,3 +4,4 @@
 *.db binary
 *.zip binary
 *.woff2 binary
+*.gz binary

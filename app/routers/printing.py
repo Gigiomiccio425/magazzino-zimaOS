@@ -22,7 +22,8 @@ def _options(params) -> dict:
     sheet = params.get("sheet") if params.get("sheet") in printing.FORMATS else None
     start = params.get("start") or "1"
     return {
-        "mode": "separate" if params.get("mode") == "separate" else "mixed",
+        "mode": params.get("mode") if params.get("mode") in ("separate", "roll") else "mixed",
+        "roll": params.get("roll") if params.get("roll") in printing.ROLL_SIZES else "62x29",
         "sheet": sheet,
         "diam": printing.clamp_diameter(params.get("diam")),
         "start": max(1, int(start)) if str(start).isdigit() else 1,
@@ -32,7 +33,7 @@ def _options(params) -> dict:
 
 def _query(opts: dict, **changes) -> str:
     data = {**opts, **changes}
-    return urlencode({"mode": data["mode"], "sheet": data["sheet"] or "", "diam": data["diam"], "start": data["start"],
+    return urlencode({"mode": data["mode"], "roll": data["roll"], "sheet": data["sheet"] or "", "diam": data["diam"], "start": data["start"],
                       "cuts": "1" if data["cuts"] else "0"})
 
 
@@ -59,6 +60,17 @@ def _slots(request: Request, db: Session, pages: list[list[tuple]]) -> list[list
     return out
 
 
+def _roll(request: Request, db: Session, entries, opts: dict) -> list[dict]:
+    """Pagine per stampante a rotolo: una per etichetta, con la sua misura."""
+    pages = printing.roll_pages(entries, opts["roll"], opts["diam"])
+    out = []
+    for rp, slots in zip(pages, _slots(request, db, [[(rp.slot.entry, rp.slot.format, rp.slot.style
+                                                         + (";transform:rotate(90deg);transform-origin:0 0" if rp.rotate else ""))]
+                                                       for rp in pages])):
+        out.append({"w": rp.w, "h": rp.h, "key": rp.key, "slots": slots})
+    return out
+
+
 def _grid_pages(sheet: printing.Sheet) -> list[list[tuple]]:
     return [[(e, sheet.format, sheet.slot_style(i)) for i, e in enumerate(page)] for page in sheet.pages]
 
@@ -77,7 +89,11 @@ def print_page(request: Request, db: Session = Depends(get_db)):
         opts["sheet"] = next((f for f in printing.FORMATS if counts[f][0]), "label")
     sheet = printing.layout(entries, opts["sheet"], opts["diam"], opts["start"])
     mixed = _mixed_pages(entries, opts["diam"])
-    if opts["mode"] == "mixed":
+    roll = []
+    if opts["mode"] == "roll":
+        roll = _roll(request, db, entries, opts)
+        pages, total_pages = [], len(roll)
+    elif opts["mode"] == "mixed":
         pages, total_pages = _slots(request, db, mixed[:1]), len(mixed)
     else:
         pages, total_pages = _slots(request, db, _grid_pages(sheet)[:1]), separate_pages
@@ -90,6 +106,7 @@ def print_page(request: Request, db: Session = Depends(get_db)):
         "wrap_mm": printing.wrap_length(opts["diam"]), "flag_mm": printing.cell_size("flag", opts["diam"])[0],
         "query": _query(opts), "query_for": lambda **kw: _query(opts, **kw),
         "self_url": f"/print?{_query(opts)}",
+        "roll_preview": roll[:6], "ROLL_SIZES": printing.ROLL_SIZES,
     })
 
 
@@ -98,6 +115,10 @@ def print_sheets(request: Request, db: Session = Depends(get_db)):
     """Documento da stampare: un foglio A4 per pagina, misure reali in millimetri."""
     opts = _options(request.query_params)
     entries = printing.queue_entries(db)
+    if opts["mode"] == "roll":
+        return render(request, "print_sheets.html", {"pages": [], "roll": _roll(request, db, entries, opts),
+                                                     "ROLL_NAME": printing.ROLL_SIZES[opts["roll"]][2],
+                                                     "opts": opts, "back": f"/print?{_query(opts)}"})
     if opts["mode"] == "mixed":
         pages = _slots(request, db, _mixed_pages(entries, opts["diam"]))
     else:

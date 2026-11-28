@@ -23,6 +23,13 @@
            value="{{ values.public_base_url }}" aria-describedby="help-url">
     <span class="field__help" id="help-url">Usato nei QR delle etichette e nei link degli avvisi Discord. Vuoto = indirizzo da cui stai navigando.</span>
   </label>
+  <label class="field">
+    <span class="field__label">Nome utente Icecat (schede tecniche)</span>
+    <input type="text" name="icecat_username" class="input" autocomplete="off" maxlength="80"
+           value="{{ values.icecat_username or '' }}" aria-describedby="help-icecat">
+    <span class="field__help" id="help-icecat">Account gratuito su icecat.biz (Open Icecat). Serve solo quando premi "Cerca scheda tecnica":
+      a Icecat si inviano marca e sigla del prodotto. Vuoto = funzione spenta.</span>
+  </label>
   <div class="form__actions">
     <button type="submit" class="btn btn--red btn--lg">Salva</button>
   </div>

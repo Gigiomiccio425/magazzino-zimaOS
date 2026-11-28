@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Setting
 
-DEFAULTS = {"signature_window_min": 10, "audit_interval_days": 180, "public_base_url": ""}
+DEFAULTS = {"signature_window_min": 10, "audit_interval_days": 180, "public_base_url": "", "icecat_username": ""}
 
 
 def get_setting(db: Session, key: str):

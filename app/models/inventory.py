@@ -16,6 +16,7 @@ component_tags = Table(
 
 class Location(Base):
     __tablename__ = "locations"
+    site_id = Column(Integer, ForeignKey("sites.id"), nullable=True)  # 2.4: sede (solo posizioni principali)
 
     id = Column(Integer, primary_key=True)
     asset_tag = Column(String(20))
@@ -47,6 +48,7 @@ class Machine(Base):
     ip_address = Column(String(60), default="")
     os = Column(String(120), default="")
     deleted_at = Column(DateTime)
+    site_id = Column(Integer, ForeignKey("sites.id"), nullable=True)  # 2.4: sede
 
     components = relationship("Component", back_populates="machine")
     place = relationship("Location")
@@ -91,6 +93,7 @@ class Component(Base):
     # v2.3: generati in automatico (services/codes.py), unici
     stock_serial = Column(String(40), unique=True)
     ref_code = Column(String(20), unique=True)
+    warranty_notified_at = Column(DateTime)  # 2.4: avviso garanzia in scadenza già inviato
 
     machine = relationship("Machine", back_populates="components")
     place = relationship("Location")
@@ -133,6 +136,7 @@ class Category(Base):
     icon = Column(String(40), default="")
     default_tracking = Column(String(20), default="serial")
     default_unit = Column(String(20), default="pz")
+    useful_life_months = Column(Integer)  # 2.4: vita utile per l'ammortamento lineare
 
     fields = relationship("CategoryField", back_populates="category", order_by="CategoryField.sort_order")
 

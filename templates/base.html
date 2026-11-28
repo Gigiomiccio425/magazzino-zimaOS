@@ -47,6 +47,10 @@
           <a href="/print" class="nav__link{% if nav_current(path, '/print') %} is-active{% endif %}"
              {% if nav_current(path, '/print') %}aria-current="page"{% endif %}>Stampa etichette{% if print_count %}<span class="nav__count">{{ print_count }}</span>{% endif %}</a>
           {{ navlink("/projects", "Progetti") }}
+          {{ navlink("/orders", "Ordini", "/orders") }}
+          {{ navlink("/suppliers", "Fornitori") }}
+          {{ navlink("/sites", "Sedi") }}
+          {{ navlink("/reports", "Report") }}
           {% block nav_magazzino %}{% endblock %}
         </div>
         <div class="nav__group" role="group" aria-labelledby="nav-g-ver">

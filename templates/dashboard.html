@@ -66,6 +66,17 @@
   </section>
   {% endif %}
 
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Scadenze e riordino</h2><a href="/orders/reorder" class="link-more">Riordino</a></div>
+    {% if cc.to_reorder %}<p><a href="/orders/reorder" class="link strong">{{ cc.to_reorder }} articol{{ 'o' if cc.to_reorder == 1 else 'i' }} da riordinare</a></p>{% endif %}
+    {% if cc.warranties %}
+    <ul class="plain-list">{% for w in cc.warranties %}<li>Garanzia <a href="/components/{{ w.id }}" class="link">{{ w.name }}</a>: scade il <span class="mono">{{ w.warranty_until.strftime('%d/%m/%Y') }}</span></li>{% endfor %}</ul>
+    {% endif %}
+    {% if cc.upcoming %}
+    <ul class="plain-list">{% for m in cc.upcoming %}<li>Manutenzione <a href="/maintenance" class="link">{{ m.title }}</a>: {{ m.starts_at|dt }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if not cc.to_reorder and not cc.warranties and not cc.upcoming %}<p class="empty">Nessuna garanzia in scadenza nei prossimi 60 giorni, nessuna manutenzione in settimana.</p>{% endif %}
+  </section>
   {% if cc.overdue_locations %}
   <section class="panel">
     <div class="panel__head"><h2 class="panel__title">Inventari da fare ({{ cc.overdue_locations|length }})</h2><a href="/audits" class="link-more">Inventari &rarr;</a></div>

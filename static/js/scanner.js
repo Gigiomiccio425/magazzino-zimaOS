@@ -56,7 +56,42 @@
     return n;
   }
 
-  function formatLabel(code) { return FORMAT_LABELS[code.format] || "Codice"; }
+  function formatLabel(code) { return code.format === "text" ? "Testo" : (FORMAT_LABELS[code.format] || "Codice"); }
+
+  // ---- Lettura del testo stampato (OCR, Tesseract.js servito dall'app: caricato solo al primo uso) ----
+  var TESS_DIR = "/static/vendor/tesseract/";
+  var ocrWorker = null;
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      if (window.Tesseract) { resolve(); return; }
+      var s = document.createElement("script");
+      s.src = src; s.onload = resolve; s.onerror = function () { reject(new Error("tesseract")); };
+      document.head.appendChild(s);
+    });
+  }
+  function getOcr() {
+    if (ocrWorker) return ocrWorker;
+    ocrWorker = loadScript(TESS_DIR + "tesseract.min.js").then(function () {
+      return window.Tesseract.createWorker("eng", 1, {
+        workerPath: TESS_DIR + "worker.min.js", corePath: TESS_DIR + "core", langPath: TESS_DIR + "lang",
+        workerBlobURL: false, gzip: true, cacheMethod: "none"
+      });
+    });
+    ocrWorker.catch(function () { ocrWorker = null; });
+    return ocrWorker;
+  }
+  // parole che sembrano sigle o seriali: lettere e cifre insieme, almeno 5 caratteri
+  function ocrCandidates(data) {
+    var seen = {}, out = [];
+    (data.words || []).forEach(function (w) {
+      var t = (w.text || "").replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "");
+      if (t.length < 5 || !/[0-9]/.test(t) || !/[A-Za-z]/.test(t) || seen[t] || (w.confidence || 0) < 40) return;
+      seen[t] = true;
+      var b = w.bbox || {};
+      out.push({ rawValue: t, format: "text", boundingBox: { x: b.x0, y: b.y0, width: b.x1 - b.x0, height: b.y1 - b.y0 } });
+    });
+    return out.slice(0, 8);
+  }
 
   function buildUI(continuous, title) {
     var dlg = el("dialog", "mag-dialog scanner-dialog");
@@ -68,6 +103,7 @@
       '  <div class="scanner-view"><video class="scanner-video" playsinline muted></video>' +
       '    <div class="scanner-reticle" aria-hidden="true"></div><div class="scanner-boxes"></div>' +
       '    <div class="scanner-tools">' +
+      '      <button type="button" class="scanner-tool scanner-ocr">Leggi testo</button>' +
       '      <button type="button" class="scanner-tool scanner-torch" aria-pressed="false" hidden>Torcia</button>' +
       '      <label class="scanner-tool scanner-zoom" hidden>Zoom <input type="range" min="1" max="1" step="0.1" value="1"></label>' +
       '    </div></div>' +
@@ -88,7 +124,7 @@
       dlg: dlg, video: q("video"), status: q(".scanner-status"), boxes: q(".scanner-boxes"),
       list: q(".scanner-list"), manual: q(".scanner-manual"), done: q(".scanner-done"), close: q(".scanner-close"),
       choices: q(".scanner-choices"), choiceList: q(".scanner-choice-list"), again: q(".scanner-again"),
-      torch: q(".scanner-torch"), zoom: q(".scanner-zoom"), zoomInput: q(".scanner-zoom input"), view: q(".scanner-view")
+      torch: q(".scanner-torch"), ocr: q(".scanner-ocr"), zoom: q(".scanner-zoom"), zoomInput: q(".scanner-zoom input"), view: q(".scanner-view")
     };
   }
 
@@ -215,6 +251,25 @@
       }
     }
 
+    ui.ocr.addEventListener("click", function () {
+      if (!ui.video.videoWidth) { ui.status.textContent = "Aspetta che la fotocamera sia pronta."; return; }
+      paused = true;
+      var canvas = document.createElement("canvas");
+      canvas.width = ui.video.videoWidth; canvas.height = ui.video.videoHeight;
+      canvas.getContext("2d").drawImage(ui.video, 0, 0);
+      ui.ocr.disabled = true;
+      ui.status.textContent = "Leggo il testo dell'etichetta… (la prima volta serve qualche secondo)";
+      getOcr().then(function (w) { return w.recognize(canvas); }).then(function (res) {
+        ui.ocr.disabled = false;
+        var found = ocrCandidates(res.data || {});
+        if (!found.length) { resume(); ui.status.textContent = "Nessuna sigla leggibile: avvicinati e riprova, o scrivila a mano."; return; }
+        showChoices(found);
+        ui.status.textContent = "Testo letto: tocca la sigla o il seriale giusto.";
+      }).catch(function () {
+        ui.ocr.disabled = false; resume();
+        ui.status.textContent = "Lettura del testo non disponibile su questo dispositivo.";
+      });
+    });
     ui.close.addEventListener("click", function () { stop(); });
     ui.again.addEventListener("click", resume);
     ui.dlg.addEventListener("cancel", function () { stop(); });

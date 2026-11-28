@@ -1,10 +1,13 @@
-"""Worker interno (asyncio, un solo processo). Unici compiti automatici: backup e consegna webhook."""
+"""Worker interno (asyncio, un solo processo). Compiti automatici: backup, consegna webhook e avvisi
+(garanzie in scadenza, promemoria manutenzioni), che non modificano dati di magazzino."""
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
-from .services import backup, outbox
+from sqlalchemy.orm import Session
+
+from .services import alerts, backup, outbox
 from .timeutil import local_zone
 
 log = logging.getLogger("magazzino.worker")
@@ -17,10 +20,17 @@ class Worker:
             (60.0, self.backup_job),
             (5.0, self.outbox_job),
             (86400.0, self.purge_job),
+            (3600.0, self.alerts_job),
         ]
 
     async def outbox_job(self) -> None:
         await outbox.deliver_due(self.app.state.engine, self.app.state.http)
+
+    async def alerts_job(self) -> None:
+        def go():
+            with Session(self.app.state.engine) as db:
+                return alerts.run(db, self.app.state.settings.app_name)
+        await asyncio.to_thread(go)
 
     async def purge_job(self) -> None:
         await asyncio.to_thread(outbox.purge_old, self.app.state.engine)

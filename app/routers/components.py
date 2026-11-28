@@ -97,7 +97,14 @@ async def _read_form(request: Request, db: Session, comp: Component | None = Non
 def list_components(request: Request, db: Session = Depends(get_db)):
     params = dict(request.query_params)
     fields = _fields_for(db, params.get("category", ""))
-    items = build_component_query(db, params, fields).order_by(Component.updated_at.desc()).all()
+    query = build_component_query(db, params, fields)
+    if str(params.get("site") or "").isdigit():
+        from ..routers.reports import _site_of_locations
+        site_id = int(params["site"])
+        loc_ids = [lid for lid, sid in _site_of_locations(db).items() if sid == site_id]
+        mach_ids = [m.id for m in db.query(Machine).filter(Machine.site_id == site_id)]
+        query = query.filter(Component.location_id.in_(loc_ids) | Component.machine_id.in_(mach_ids))
+    items = query.order_by(Component.updated_at.desc()).all()
     return render(request, "components_list.html", {
         "items": items,
         "categories": [c.name for c in db.query(Category).order_by(Category.name)],
@@ -128,6 +135,16 @@ def new_component(request: Request, preset: str = "", part: str = "", db: Sessio
 @router.get("/presets")
 def presets_search(q: str = ""):
     return JSONResponse([p.as_dict() for p in presets.search(q, limit=40)])
+
+
+@router.get("/presets/icecat")
+async def presets_icecat(request: Request, brand: str = "", part: str = "", db: Session = Depends(get_db)):
+    from ..services import icecat
+    from ..services.settings_store import get_setting
+
+    result = await icecat.lookup(request.app.state.http, get_setting(db, "icecat_username") or "",
+                                 brand.strip()[:120], part.strip()[:120])
+    return JSONResponse(result, status_code=200 if "found" in result else 404 if result["error"] == "not_found" else 422)
 
 
 @router.get("/presets/recognize")
@@ -179,7 +196,27 @@ def component_detail(comp_id: int, request: Request, db: Session = Depends(get_d
         .order_by(Attachment.id).all(),
         "test_runs": db.query(TestRun).filter_by(component_id=comp.id).order_by(TestRun.id.desc()).limit(20).all(),
         "RESULTS": TEST_RESULTS,
+        **_detail_extra(db, comp),
     })
+
+
+def _detail_extra(db: Session, comp: Component) -> dict:
+    from ..models import Project, ProjectItem, Supplier, SupplierPart
+    from ..services.inventory import ACTIVE_PROJECT_STATUSES
+    from ..services import valuation
+
+    life = valuation.life_by_category(db).get(comp.category)
+    reserved = (db.query(ProjectItem).join(Project)
+                .filter(ProjectItem.component_id == comp.id, Project.status.in_(ACTIVE_PROJECT_STATUSES),
+                        Project.deleted_at.is_(None)).all())
+    return {
+        "current_value": valuation.current_value(comp, life), "life_months": life or valuation.DEFAULT_LIFE_MONTHS,
+        "supplier_parts": db.query(SupplierPart).filter_by(component_id=comp.id).all(),
+        "suppliers": db.query(Supplier).filter(Supplier.deleted_at.is_(None)).order_by(Supplier.name).all(),
+        "reservations": reserved,
+        "open_projects": db.query(Project).filter(Project.status.in_(ACTIVE_PROJECT_STATUSES),
+                                                  Project.deleted_at.is_(None)).order_by(Project.name).all(),
+    }
 
 
 @router.get("/components/{comp_id}/edit")

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Fornitori &middot; {{ APP_NAME }}{% endblock %}
+{% block heading %}Fornitori{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <a href="/orders" class="btn btn--outline">Ordini</a>
+  <a href="/orders/reorder" class="btn btn--outline">Da riordinare</a>
+</div>
+
+{% if suppliers %}
+<div class="table-wrap">
+<table class="table table--cards">
+  <caption class="sr-only">Fornitori</caption>
+  <thead><tr><th scope="col">Nome</th><th scope="col">Contatti</th><th scope="col">Articoli collegati</th></tr></thead>
+  <tbody>
+  {% for s in suppliers %}
+  <tr>
+    <td data-label="Nome" class="strong">{% if s.website %}<a href="{{ s.website }}" class="link" rel="noopener noreferrer" target="_blank">{{ s.name }}</a>{% else %}{{ s.name }}{% endif %}</td>
+    <td data-label="Contatti">{{ s.email or '' }}{% if s.email and s.phone %} · {% endif %}{{ s.phone or '' }}{% if not s.email and not s.phone %}—{% endif %}</td>
+    <td data-label="Articoli" class="num">{{ parts[s.id] }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted small">Collega un componente a un fornitore (codice articolo, prezzo, link) dalla scheda del componente.</p>
+{% else %}
+<div class="empty-box"><p>Nessun fornitore. Aggiungi i negozi da cui compri: serviranno per gli ordini e il riordino.</p></div>
+{% endif %}
+
+<form method="post" action="/suppliers/new" class="form form--narrow">
+  {{ csrf_field() }}
+  <h2 class="panel__title">Nuovo fornitore</h2>
+  <label class="field"><span class="field__label">Nome *</span><input type="text" name="name" required maxlength="160" class="input"></label>
+  <label class="field"><span class="field__label">Sito</span><input type="url" name="website" class="input" placeholder="https://…" inputmode="url"></label>
+  <div class="form__grid">
+    <label class="field"><span class="field__label">Email</span><input type="email" name="email" class="input"></label>
+    <label class="field"><span class="field__label">Telefono</span><input type="tel" name="phone" class="input"></label>
+  </div>
+  <label class="field"><span class="field__label">Note</span><textarea name="notes" rows="2" class="input"></textarea></label>
+  <div class="form__actions"><button type="submit" class="btn btn--red">Aggiungi fornitore</button></div>
+</form>
+{% endblock %}

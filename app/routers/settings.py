@@ -14,7 +14,7 @@ from ..services.signing import SignerInfo, require_signer
 router = APIRouter()
 
 
-def _validate(window: str, audit_days: str, base: str) -> tuple[dict, str | None]:
+def _validate(window: str, audit_days: str, base: str, icecat: str = "") -> tuple[dict, str | None]:
     try:
         w, a = int(window), int(audit_days)
     except ValueError:
@@ -28,7 +28,10 @@ def _validate(window: str, audit_days: str, base: str) -> tuple[dict, str | None
         u = urlparse(base)
         if u.scheme not in ("http", "https") or not u.netloc:
             return {}, "L'URL pubblico deve iniziare con http:// o https://."
-    return {"signature_window_min": w, "audit_interval_days": a, "public_base_url": base}, None
+    icecat = icecat.strip()[:80]
+    if icecat and not icecat.replace("_", "").replace("-", "").replace(".", "").replace("@", "").isalnum():
+        return {}, "Il nome utente Icecat contiene caratteri non validi."
+    return {"signature_window_min": w, "audit_interval_days": a, "public_base_url": base, "icecat_username": icecat}, None
 
 
 @router.get("/settings")
@@ -39,9 +42,9 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/settings")
 def settings_save(request: Request, signature_window_min: str = Form("10"), audit_interval_days: str = Form("180"),
-                  public_base_url: str = Form(""), db: Session = Depends(get_db),
+                  public_base_url: str = Form(""), icecat_username: str = Form(""), db: Session = Depends(get_db),
                   signer: SignerInfo = Depends(require_signer(critical=True))):
-    values, error = _validate(signature_window_min, audit_interval_days, public_base_url)
+    values, error = _validate(signature_window_min, audit_interval_days, public_base_url, icecat_username)
     if error:
         if is_fetch(request):
             return JSONResponse({"error": "invalid", "message": error}, status_code=422)

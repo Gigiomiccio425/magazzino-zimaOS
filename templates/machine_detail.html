@@ -22,6 +22,15 @@
 <p class="notes notes--wide">{{ machine.description }}</p>
 {% endif %}
 
+{% if compat %}
+<section class="panel compat" aria-labelledby="compat-title">
+  <div class="panel__head"><h2 class="panel__title" id="compat-title">Compatibilità</h2></div>
+  <ul class="compat-list">
+    {% for f in compat %}<li class="compat-item compat-item--{{ f.level }}"><strong>{{ {'error': 'Problema', 'warn': 'Attenzione', 'ok': 'OK'}[f.level] }}:</strong> {{ f.message }}</li>{% endfor %}
+  </ul>
+  <p class="muted small">Controllo basato su socket, tipo di RAM, slot e potenza inseriti nelle caratteristiche dei pezzi.</p>
+</section>
+{% endif %}
 <section class="panel">
   <div class="panel__head">
     <h2 class="panel__title">Componenti installati ({{ components|length }})</h2>
