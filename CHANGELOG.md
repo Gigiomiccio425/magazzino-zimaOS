@@ -2,8 +2,8 @@
 
 ## 2.3.0 — 2026-11
 
-- Modelli pronti: 141 modelli fra RAM da DDR1 a DDR5 (soprattutto Kingston ValueRAM, HyperX e FURY,
-  poi Corsair, Crucial, G.Skill, Samsung, SK Hynix), SSD e schede video più diffusi. Nel nuovo
+- Modelli pronti: 209 modelli fra RAM da DDR1 a DDR5 (soprattutto Kingston ValueRAM, HyperX e FURY,
+  poi Corsair, Crucial, G.Skill, Samsung, SK Hynix), CPU, SSD, dischi, schede video e alimentatori. Nel nuovo
   componente si cercano per nome o sigla e compilano il modulo (caratteristiche comprese).
 - Riconoscimento del modello: scansionando l'etichetta del pezzo (QR o codice a barre) la sigla viene
   riconosciuta anche dentro altro testo; se non è in elenco viene decodificata dalle regole di sigla
