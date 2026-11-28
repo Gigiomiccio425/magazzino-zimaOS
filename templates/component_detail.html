@@ -54,6 +54,8 @@
   <section class="panel">
     <div class="panel__head"><h2 class="panel__title">Dettagli</h2></div>
     <dl class="specs">
+      <div class="spec"><dt>Seriale di magazzino</dt><dd class="mono strong">{{ c.stock_serial or '—' }}</dd></div>
+      <div class="spec"><dt>Codice di riferimento</dt><dd class="mono strong">{{ c.ref_code or '—' }}</dd></div>
       <div class="spec"><dt>Codice oggetto</dt><dd class="mono">{{ c.object_code or '—' }}</dd></div>
       <div class="spec"><dt>Modello</dt><dd>{{ c.model or '—' }}</dd></div>
       <div class="spec"><dt>Produttore</dt><dd>{{ c.manufacturer or '—' }}</dd></div>

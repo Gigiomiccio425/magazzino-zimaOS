@@ -45,9 +45,16 @@ def resolve_scan(db: Session, value: str) -> dict:
         hits = (
             db.query(Component.id)
             .filter(Component.deleted_at.is_(None),
-                    (Component.serial_number == value) | (Component.object_code == value))
+                    (Component.serial_number == value) | (Component.object_code == value)
+                    | (Component.stock_serial == value.upper()) | (Component.ref_code == value.upper()))
             .limit(2).all()
         )
         if len(hits) == 1:
             return {"url": f"/components/{hits[0][0]}"}
+    if value:
+        from .presets import recognize  # modello riconosciuto dalla sigla: si propone un nuovo componente
+        found = recognize(value)
+        if found is not None:
+            return {"new": f"/components/new?part={quote(value)}", "model": found.label,
+                    "search": f"/components?q={quote(found.part or value)}"}
     return {"search": f"/components?q={quote(value)}"}

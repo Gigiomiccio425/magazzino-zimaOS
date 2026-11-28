@@ -45,7 +45,8 @@ def test_create_component_signed_and_audited(client, db, op_id):
 def test_edit_audits_only_changes(client, db):
     cid = new_component(client)
     client.post(f"/components/{cid}/edit",
-                data={"name": "RTX 3060", "category": "GPU", "status": "faulty", "quantity": "1"}, headers=FETCH)
+                data={"name": "RTX 3060", "category": "GPU", "status": "faulty", "quantity": "1",
+                      "tags": "gpu"}, headers=FETCH)  # il modulo reimposta i tag mostrati (anche quelli automatici)
     log = db.query(AuditLog).filter_by(entity_type="component", action="update").one()
     assert log.before == {"status": "stock"} and log.after == {"status": "faulty"}
 

@@ -9,6 +9,7 @@ import httpx
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from .config import load_settings
@@ -18,6 +19,7 @@ from .database import make_engine
 from .deps import flash, is_fetch
 from .migrations.runner import run_migrations
 from .routers import attachments, audit_log, audits, incidents, auth, backups, categories, components, components_bulk, dashboard, locations, machines, maintenance, printing, qr, operators, projects, pwa, search, services, settings, sign, tests_log, trash, webhooks
+from .services import codes
 from .services.signing import SignatureRequired
 from .worker import Worker
 
@@ -53,6 +55,11 @@ def create_app(data_dir: str | Path | None = None, *, start_worker: bool = True)
         if report.from_version != report.to_version:
             log.info("Schema DB: v%s -> v%s (backup: %s)", report.from_version, report.to_version, report.backup_path)
         app.state.engine = make_engine(settings.db_path)
+        with Session(app.state.engine) as db:  # codici ai componenti creati prima della 2.3
+            filled = codes.backfill(db)
+            db.commit()
+            if filled:
+                log.info("Codici assegnati a %s componenti esistenti", filled)
         app.state.http = httpx.AsyncClient(timeout=10)
         stop = asyncio.Event()
         task = asyncio.create_task(Worker(app).run(stop)) if start_worker else None

@@ -1,6 +1,6 @@
 // Service worker: sempre prima la rete (aggiornamenti immediati), cache solo come riserva offline.
 // Nessuna scrittura offline: se la rete manca si mostra la pagina /offline.
-const CACHE = "magazzino-v2.2.0";
+const CACHE = "magazzino-v2.3.0";
 const PRECACHE = ["/offline", "/static/css/style.css", "/static/js/app.js", "/static/favicon.svg",
   "/static/pwa/icon-192.png"];
 

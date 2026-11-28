@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.3.0 — 2026-11
+
+- Modelli pronti: 141 modelli fra RAM da DDR1 a DDR5 (soprattutto Kingston ValueRAM, HyperX e FURY,
+  poi Corsair, Crucial, G.Skill, Samsung, SK Hynix), SSD e schede video più diffusi. Nel nuovo
+  componente si cercano per nome o sigla e compilano il modulo (caratteristiche comprese).
+- Riconoscimento del modello: scansionando l'etichetta del pezzo (QR o codice a barre) la sigla viene
+  riconosciuta anche dentro altro testo; se non è in elenco viene decodificata dalle regole di sigla
+  delle marche principali. Dallo scanner generale, un modello non ancora in magazzino propone
+  "Nuovo componente".
+- Scanner: quando QR e codici a barre sono vicini lo scanner si ferma, li numera sull'immagine e fa
+  scegliere quello giusto; torcia e zoom dove il telefono li supporta; risoluzione più alta; a tutto
+  schermo sul telefono.
+- Seriale di magazzino (es. RAM-KIN-D4-16G-0007) e codice di riferimento unico (GD-XXXX-XXXX con
+  cifra di controllo) generati in automatico per ogni componente, anche per quelli già presenti;
+  si trovano con la ricerca e con lo scanner.
+- Tag automatici dalle specifiche alla creazione (categoria, marca, tipo, capacità, velocità, formato...).
+- Telefono e tablet: menu a scomparsa fino a 1024 px con ricerca nel menu, pulsante di chiusura e
+  sfondo scuro; bersagli da 48 px al tocco e campi a 16 px; barra in basso Home, Pezzi, Scansiona,
+  Stampa (con il numero di etichette in coda), Menu.
+- Tipi RAM da DDR a DDR5 (anche SO-DIMM) nella categoria RAM (migrazione 5: solo aggiunte).
+
 ## 2.2.0 — 2026-11
 
 Nuovo design e zona stampa etichette.

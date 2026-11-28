@@ -103,7 +103,7 @@ def _describe(db: Session, item: PrintItem) -> Entry | None:
             place = obj.place.name
         else:
             place = "—"
-        title, sub = obj.name, obj.category or ""
+        title, sub = obj.name, obj.stock_serial or obj.category or ""
     elif isinstance(obj, Location):
         place, title, sub = obj.name, location_path(obj), "Posizione"
     else:

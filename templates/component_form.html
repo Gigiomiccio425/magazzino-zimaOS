@@ -1,19 +1,38 @@
 {% extends "base.html" %}
 {% set editing = component is not none %}
-{% set c = component %}
+{% set c = component if editing else (draft if draft is defined else none) %}
+{% set has = c is not none %}
 {% block title %}{{ 'Modifica' if editing else 'Nuovo' }} componente &middot; {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifica componente' if editing else 'Nuovo componente' }}{% endblock %}
 
-{% macro val(name, default='') -%}{{ (c[name] if editing and c[name] is not none else default) }}{%- endmacro %}
+{% macro val(name, default='') -%}{{ (c[name] if has and c[name] is not none else default) }}{%- endmacro %}
 
 {% block content %}
+{% if not editing %}
+<section class="preset-box" aria-labelledby="preset-title">
+  <div class="preset-box__head">
+    <h2 class="preset-box__title" id="preset-title">Parti da un modello</h2>
+    <button type="button" class="btn btn--red" data-scan-model>Scansiona l'etichetta del pezzo</button>
+  </div>
+  {% if preset %}
+  <p class="preset-box__found" role="status"><strong>{{ 'Riconosciuto dalla sigla' if preset.guessed else 'Modello' }}:</strong>
+    {{ preset.label }}. Controlla i dati con l'etichetta prima di salvare. <a href="/components/new" class="link">Ricomincia</a></p>
+  {% elif part_not_found %}
+  <p class="preset-box__miss" role="status">Nessun modello riconosciuto per <span class="mono">{{ part_not_found }}</span>: compila a mano o cerca qui sotto.</p>
+  {% endif %}
+  <label class="field preset-search"><span class="field__label">Cerca tra {{ preset_count }} modelli (RAM DDR–DDR5, SSD, schede video)</span>
+    <input type="search" class="input" id="preset-q" placeholder="es. kingston ddr4 16, KVR32N22, 870 evo" autocomplete="off"
+           aria-controls="preset-results" enterkeyhint="search"></label>
+  <ul class="preset-results" id="preset-results" aria-label="Modelli trovati"></ul>
+</section>
+{% endif %}
 <form method="post" action="{{ '/components/' ~ c.id ~ '/edit' if editing else '/components/new' }}" class="form" id="component-form">
   {{ csrf_field() }}
 
   <fieldset class="fieldset fieldset--block">
     <legend class="field__label">Tipo di articolo</legend>
     {% for code, label in TRACKING.items() %}
-    <label class="check"><input type="radio" name="tracking" value="{{ code }}" {% if (c.tracking if editing else 'serial') == code %}checked{% endif %}>
+    <label class="check"><input type="radio" name="tracking" value="{{ code }}" {% if (c.tracking if has else 'serial') == code %}checked{% endif %}>
       {{ label }} <span class="muted">{{ '(un pezzo con seriale: GPU, SSD…)' if code == 'serial' else '(scorta: cavi, viti…)' }}</span></label>
     {% endfor %}
   </fieldset>
@@ -57,7 +76,7 @@
 
     <label class="field"><span class="field__label">Stato</span>
       <select name="status" class="input">
-        {% for key, label in STATUSES.items() %}<option value="{{ key }}" {% if (c.status if editing else 'stock') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        {% for key, label in STATUSES.items() %}<option value="{{ key }}" {% if (c.status if has else 'stock') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select></label>
 
     <label class="field"><span class="field__label">Macchina (dove è montato)</span>
@@ -83,7 +102,7 @@
     {% for cat, fields in fields_by_category.items() %}
     <div class="form__grid typed-group" data-category="{{ cat }}" hidden>
       {% for f in fields %}
-      {% set current = (c.attributes or {}).get(f.key) if editing else none %}
+      {% set current = (c.attributes or {}).get(f.key) if has else none %}
       <label class="field"><span class="field__label">{{ f.label }}{% if f.unit %} ({{ f.unit }}){% endif %}</span>
         {% if f.type == 'number' %}
           <input type="text" inputmode="decimal" name="cf_{{ f.id }}" class="input" value="{{ current if current is not none else '' }}" disabled>
@@ -109,7 +128,7 @@
   <fieldset class="attrs">
     <legend class="attrs__legend">Altri attributi <span class="attrs__hint">(liberi)</span></legend>
     <div id="attr-rows">
-      {% if editing and c.attributes %}
+      {% if has and c.attributes %}
         {% set typed_keys = (fields_by_category.get(c.category) or [])|map(attribute='key')|list %}
         {% for k, v in c.attributes.items() if k not in typed_keys %}
         <div class="attr-row">
@@ -159,4 +178,4 @@
 {% endif %}
 {% endblock %}
 
-{% block scripts %}<script src="{{ asset('js/attrs.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="{{ asset('js/attrs.js') }}"></script><script src="{{ asset('js/presets.js') }}"></script>{% endblock %}

@@ -159,11 +159,16 @@
   if (burger && sidebar) {
     var setOpen = function (open) {
       sidebar.classList.toggle("is-open", open);
+      document.body.classList.toggle("menu-open", open);
       burger.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) { var first = sidebar.querySelector(".nav-close"); if (first) first.focus(); }
     };
+    sidebar.addEventListener("click", function (e) {
+      if (e.target.closest("[data-close-menu]")) { setOpen(false); burger.focus(); }
+    });
     burger.addEventListener("click", function () { setOpen(!sidebar.classList.contains("is-open")); });
     document.addEventListener("click", function (e) {
-      if (window.innerWidth <= 780 && sidebar.classList.contains("is-open")
+      if (window.innerWidth <= 1024 && sidebar.classList.contains("is-open")
           && !sidebar.contains(e.target) && e.target !== burger) {
         setOpen(false);
       }
@@ -174,6 +179,29 @@
     document.addEventListener("click", function (e) {
       if (e.target.closest("[data-open-menu]")) { e.stopPropagation(); setOpen(!sidebar.classList.contains("is-open")); }
     }, true);
+  }
+
+  // ---- Ricerca nel menu: filtra le voci; Invio senza voci trovate = ricerca nel magazzino ----
+  var navFilter = document.getElementById("nav-filter");
+  if (navFilter && sidebar) {
+    var norm = function (t) { return (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); };
+    navFilter.addEventListener("input", function () {
+      var q = norm(navFilter.value.trim());
+      sidebar.querySelectorAll(".nav .nav__link").forEach(function (a) {
+        a.hidden = !!q && norm(a.textContent).indexOf(q) < 0;
+      });
+      sidebar.querySelectorAll(".nav__group").forEach(function (g) {
+        g.hidden = !!q && !g.querySelector(".nav__link:not([hidden])");
+      });
+    });
+    navFilter.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      var visible = sidebar.querySelectorAll(".nav .nav__link:not([hidden])");
+      var q = navFilter.value.trim();
+      if (q && visible.length === 1) window.location.assign(visible[0].href);
+      else if (q) window.location.assign("/search?q=" + encodeURIComponent(q));
+    });
   }
 
   // ---- Auto-dismiss flash ----

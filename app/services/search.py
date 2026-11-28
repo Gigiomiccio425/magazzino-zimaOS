@@ -37,9 +37,10 @@ def global_search(db: Session, q: str, limit: int = 6) -> list[SearchGroup]:
     add("Componenti", db.query(Component).filter(
         Component.deleted_at.is_(None),
         or_(Component.name.ilike(like), Component.asset_tag.ilike(like), Component.serial_number.ilike(like),
+            Component.stock_serial.ilike(like), Component.ref_code.ilike(like),
             Component.object_code.ilike(like), Component.model.ilike(like)),
     ).order_by(Component.name).limit(limit),
-        lambda c: SearchHit(c.name, " · ".join(x for x in [c.asset_tag, c.category, c.serial_number] if x),
+        lambda c: SearchHit(c.name, " · ".join(x for x in [c.asset_tag, c.stock_serial, c.category, c.serial_number] if x),
                             f"/components/{c.id}"))
     add("Posizioni", db.query(Location).filter(
         Location.deleted_at.is_(None), or_(Location.name.ilike(like), Location.asset_tag.ilike(like)),

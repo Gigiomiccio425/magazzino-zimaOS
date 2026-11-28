@@ -88,6 +88,9 @@ class Component(Base):
     deleted_at = Column(DateTime)
     created_by = Column(Integer, ForeignKey("operators.id"), nullable=True)
     updated_by = Column(Integer, ForeignKey("operators.id"), nullable=True)
+    # v2.3: generati in automatico (services/codes.py), unici
+    stock_serial = Column(String(40), unique=True)
+    ref_code = Column(String(20), unique=True)
 
     machine = relationship("Machine", back_populates="components")
     place = relationship("Location")

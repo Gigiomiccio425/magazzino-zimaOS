@@ -1,12 +1,13 @@
+{% set p = request.url.path %}
 <nav class="bottom-nav" aria-label="Navigazione rapida">
-  <a href="/" class="bottom-nav__item" {% if request.url.path == '/' %}aria-current="page"{% endif %}>
-    <span class="bottom-nav__icon" aria-hidden="true">&#9632;</span>Home</a>
-  <a href="/search" class="bottom-nav__item" data-open-palette>
-    <span class="bottom-nav__icon" aria-hidden="true">&#9906;</span>Cerca</a>
+  <a href="/" class="bottom-nav__item" {% if p == '/' %}aria-current="page"{% endif %}>
+    <svg class="bottom-nav__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a>
+  <a href="/components" class="bottom-nav__item" {% if p.startswith('/components') %}aria-current="page"{% endif %}>
+    <svg class="bottom-nav__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>Pezzi</a>
   <button type="button" class="bottom-nav__item bottom-nav__item--scan" data-scan-search>
-    <span class="bottom-nav__icon" aria-hidden="true">&#9638;</span>Scan</button>
-  <a href="/incidents?status=open" class="bottom-nav__item" {% if request.url.path.startswith('/incidents') %}aria-current="page"{% endif %}>
-    <span class="bottom-nav__icon" aria-hidden="true">&#9650;</span>Incidenti</a>
+    <svg class="bottom-nav__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>Scansiona</button>
+  <a href="/print" class="bottom-nav__item" {% if p.startswith('/print') %}aria-current="page"{% endif %}>
+    <svg class="bottom-nav__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg>Stampa{% if print_count %}<span class="bottom-nav__badge">{{ print_count }}</span>{% endif %}</a>
   <button type="button" class="bottom-nav__item" data-open-menu aria-controls="sidebar">
-    <span class="bottom-nav__icon" aria-hidden="true">&#9776;</span>Menu</button>
+    <svg class="bottom-nav__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Menu</button>
 </nav>

@@ -24,6 +24,11 @@
           <div class="brand__sub">hardware · comando</div>
         </div>
       </div>
+      <button type="button" class="nav-close" data-close-menu aria-label="Chiudi menu">&times;</button>
+      <div class="nav-search">
+        <label class="sr-only" for="nav-filter">Cerca nel menu o nel magazzino</label>
+        <input type="search" id="nav-filter" class="input" placeholder="Cerca pagina o pezzo…" autocomplete="off" enterkeyhint="search">
+      </div>
       {% set path = request.url.path %}
       {% macro navlink(href, label, match=None) -%}
         {%- set m = match or href -%}
@@ -76,6 +81,7 @@
         <a href="/machines/new" class="btn btn--outline btn--block">+ Macchina</a>
       </div>
     </aside>
+    <div class="nav-backdrop" data-close-menu-backdrop aria-hidden="true"></div>
 
     <main class="main" id="main" tabindex="-1">
       <header class="topbar">

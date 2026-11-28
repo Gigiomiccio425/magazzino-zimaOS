@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import flash, is_fetch, redirect, render
 from ..models import STATUS_STOCK, STATUSES, TEST_RESULTS, TRACKING, Attachment, Category, CategoryField, Component, Machine, Movement, Tag, TestRun
-from ..services import audit, events
+from ..services import audit, codes, events, presets
 from ..services.component_form import FormError, apply_component_data, parse_component_form
 from ..services.component_query import build_component_query
 from ..services.inventory import (
@@ -65,6 +65,7 @@ def _form_ctx(db: Session, comp: Component | None) -> dict:
         "locations": location_options(db),
         "fields_by_category": _all_fields(db),
         "TRACKING": TRACKING,
+        "preset_count": len(presets.PRESETS),
     }
 
 
@@ -110,8 +111,29 @@ def list_components(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/components/new")
-def new_component(request: Request, db: Session = Depends(get_db)):
-    return render(request, "component_form.html", _form_ctx(db, None))
+def new_component(request: Request, preset: str = "", part: str = "", db: Session = Depends(get_db)):
+    """Modulo vuoto, oppure già compilato da un modello (?preset=id) o da un codice letto (?part=...)."""
+    found = presets.get(preset) if preset else (presets.recognize(part) if part else None)
+    ctx = _form_ctx(db, None)
+    if found is not None:
+        draft = Component(name=found.name, category=found.category, manufacturer=found.manufacturer,
+                          model=" ".join(x for x in [found.line, found.part] if x), object_code=found.part,
+                          attributes=dict(found.attributes), tracking="serial", quantity=1, unit="pz", status="stock")
+        ctx.update({"draft": draft, "preset": found})
+    elif part:
+        ctx["part_not_found"] = part
+    return render(request, "component_form.html", ctx)
+
+
+@router.get("/presets")
+def presets_search(q: str = ""):
+    return JSONResponse([p.as_dict() for p in presets.search(q, limit=40)])
+
+
+@router.get("/presets/recognize")
+def presets_recognize(v: str = ""):
+    found = presets.recognize(v)
+    return JSONResponse({"found": found.as_dict() if found else None})
 
 
 @router.post("/components/new")
@@ -130,10 +152,12 @@ async def create_component(request: Request, db: Session = Depends(get_db),
     db.add(comp)
     db.flush()
     comp.asset_tag = make_tag("C", comp.id)
-    _set_tags(db, comp, data.tags)
+    codes.assign_codes(db, comp)
+    tags = sorted(set(data.tags) | set(presets.auto_tags(comp.category, comp.manufacturer, comp.attributes)))
+    _set_tags(db, comp, tags)
     add_movement(db, comp, signer, "created", note="Componente creato", to_machine=machine_name(db, comp.machine_id))
-    after = audit.snapshot(comp, COMPONENT_FIELDS + ["asset_tag"])
-    after["tags"] = data.tags
+    after = audit.snapshot(comp, COMPONENT_FIELDS + ["asset_tag", "stock_serial", "ref_code"])
+    after["tags"] = tags
     audit.record(db, entity_type="component", entity_id=comp.id, action="create", after=after, signer=signer)
     db.commit()
     flash(request, f"Componente \"{comp.name}\" aggiunto ({comp.asset_tag}).")
